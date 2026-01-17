@@ -1,0 +1,11 @@
+{
+  "employeeTypes": {
+    "0001": "student",
+    "0002": "student",
+    "0003": "teacher",
+    "0004": "teacher"
+  },
+  "notes": "This file maps employee codes (Empcode) to their type: 'student' or 'teacher'",
+  "instructions": "Add employee codes from your Excel file here. Format: \"EMPLOYEE_CODE\": \"student\" or \"teacher\"",
+  "howToUpdate": "1. Open your Excel file (student_staff_details.xlsx), 2. Find the Employee Code column, 3. Find the Type/Category column, 4. Add entries here matching: \"CODE\": \"student\" or \"teacher\", 5. See EMPLOYEE_TYPES_SETUP.md for detailed instructions"
+}

@@ -34,17 +34,43 @@ const mockChildrenData = [
 
 let childrenData = [];
 let filteredData = [];
+let employeeTypeMap = {}; // Maps employee code to 'student' or 'teacher'
+
+// Load employee type mapping from JSON file
+async function loadEmployeeTypes() {
+    try {
+        const response = await fetch('employee-types.json');
+        if (response.ok) {
+            const data = await response.json();
+            employeeTypeMap = data.employeeTypes || {};
+            console.log('Loaded employee types:', Object.keys(employeeTypeMap).length, 'entries');
+        } else {
+            console.warn('Could not load employee-types.json, using empty mapping');
+            employeeTypeMap = {};
+        }
+    } catch (error) {
+        console.warn('Error loading employee types:', error);
+        employeeTypeMap = {};
+    }
+}
+
+// Get employee type (student or teacher) based on employee code
+function getEmployeeType(employeeCode) {
+    return employeeTypeMap[employeeCode] || 'unknown';
+}
 
 // Transform API data to match expected format
 function transformApiChildData(apiChild) {
     // New format directly from backend: id, name, date, checkIn, checkOut, status
+    const employeeCode = apiChild.id || '';
     return {
-        id: apiChild.id || '',
+        id: employeeCode,
         name: apiChild.name || 'Unknown',
         date: apiChild.date || '',
         checkIn: apiChild.checkIn || null,
         checkOut: apiChild.checkOut || null,
-        status: apiChild.status || 'Absent'
+        status: apiChild.status || 'Absent',
+        type: getEmployeeType(employeeCode) // Add type: 'student', 'teacher', or 'unknown'
     };
 }
 
@@ -152,6 +178,7 @@ function renderAttendanceCards(data = filteredData) {
                 <tr>
                     <th>ID</th>
                     <th>Name</th>
+                    <th>Type</th>
                     <th>Date</th>
                     <th>Check In</th>
                     <th>Check Out</th>
@@ -159,10 +186,19 @@ function renderAttendanceCards(data = filteredData) {
                 </tr>
             </thead>
             <tbody>
-                ${data.map(record => `
+                ${data.map(record => {
+                    const type = (record.type || 'unknown').toLowerCase();
+                    const typeLabel = type === 'student' ? 'Student' : type === 'teacher' ? 'Teacher' : '—';
+                    const typeClass = type === 'student' ? 'type-student' : type === 'teacher' ? 'type-teacher' : '';
+                    return `
                     <tr>
                         <td>${record.id}</td>
                         <td>${record.name}</td>
+                        <td>
+                            <span class="type-badge ${typeClass}">
+                                ${typeLabel}
+                            </span>
+                        </td>
                         <td>${record.date}</td>
                         <td>${record.checkIn || '—'}</td>
                         <td>${record.checkOut || '—'}</td>
@@ -172,7 +208,8 @@ function renderAttendanceCards(data = filteredData) {
                             </span>
                         </td>
                     </tr>
-                `).join('')}
+                `;
+                }).join('')}
             </tbody>
         </table>
     `;
@@ -196,22 +233,47 @@ function updateSummary() {
     document.getElementById('absentCount').textContent = absent;
 }
 
+// Filter by type (student/teacher)
+function filterByType(type) {
+    applyFilters();
+}
+
 // Filter by status
 function filterByStatus(status) {
-    if (status === 'all') {
-        filteredData = [...childrenData];
-    } else {
-        // Map frontend filter values to backend status values (case-insensitive)
-        filteredData = childrenData.filter(record => {
-            const recordStatus = (record.status || '').toLowerCase();
-            if (status === 'present') {
-                return recordStatus === 'present' || recordStatus === 'p';
-            } else if (status === 'absent') {
-                return recordStatus === 'absent' || recordStatus === 'a';
+    applyFilters();
+}
+
+// Apply all filters (type and status)
+function applyFilters() {
+    const typeFilter = document.getElementById('typeFilterSelect')?.value || 'all';
+    const statusFilter = document.getElementById('filterSelect')?.value || 'all';
+    
+    filteredData = childrenData.filter(record => {
+        // Type filter
+        if (typeFilter !== 'all') {
+            const recordType = (record.type || 'unknown').toLowerCase();
+            if (recordType !== typeFilter) {
+                return false;
             }
-            return false;
-        });
-    }
+        }
+        
+        // Status filter
+        if (statusFilter !== 'all') {
+            const recordStatus = (record.status || '').toLowerCase();
+            if (statusFilter === 'present') {
+                if (recordStatus !== 'present' && recordStatus !== 'p') {
+                    return false;
+                }
+            } else if (statusFilter === 'absent') {
+                if (recordStatus !== 'absent' && recordStatus !== 'a') {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    });
+    
     renderAttendanceCards();
     updateSummary();
 }
@@ -239,6 +301,9 @@ async function initAttendance() {
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray-500);">Loading attendance data...</div>';
     }
     
+    // Load employee type mapping first
+    await loadEmployeeTypes();
+    
     // Get selected date filter
     const dateSelect = document.getElementById('dateSelect');
     const dateFilter = dateSelect ? dateSelect.value : 'today';
@@ -247,9 +312,8 @@ async function initAttendance() {
     childrenData = await fetchAttendanceData(dateFilter);
     filteredData = [...childrenData];
     
-    // Render and update
-    renderAttendanceCards();
-    updateSummary();
+    // Apply filters
+    applyFilters();
     
     // Setup event handlers
     setupEventHandlers();
@@ -265,7 +329,15 @@ function setupEventHandlers() {
         });
     }
     
-    // Filter handler
+    // Type filter handler (student/teacher)
+    const typeFilterSelect = document.getElementById('typeFilterSelect');
+    if (typeFilterSelect) {
+        typeFilterSelect.addEventListener('change', (e) => {
+            filterByType(e.target.value);
+        });
+    }
+    
+    // Status filter handler
     const filterSelect = document.getElementById('filterSelect');
     if (filterSelect) {
         filterSelect.addEventListener('change', (e) => {
