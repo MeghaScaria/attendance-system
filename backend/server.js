@@ -295,8 +295,8 @@ app.get('/api/attendance/range', authenticateToken, async (req, res) => {
         // Call E-Time API with correct parameters
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
-            FromDate: formatDate(startDate, '00:00'),
-            ToDate: formatDate(endDate, '23:59')
+            FromDate: formatDate(startDate),
+            ToDate: formatDate(endDate)
         });
         
         if (!result.success) {
@@ -326,8 +326,8 @@ app.get('/api/attendance/all', authenticateToken, async (req, res) => {
         // Call E-Time API with correct parameters
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
-            FromDate: formatDate(startDate, '00:00'),
-            ToDate: formatDate(endDate, '23:59')
+            FromDate: formatDate(startDate),
+            ToDate: formatDate(endDate)
         });
         
         if (!result.success) {
@@ -405,8 +405,8 @@ app.get('/api/children', authenticateToken, async (req, res) => {
         
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
-            FromDate: formatDate(startDate, '00:00'),
-            ToDate: formatDate(endDate, '23:59')
+            FromDate: formatDate(startDate),
+            ToDate: formatDate(endDate)
         });
         
         if (!result.success) {
