@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance System - Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="30" cy="30" r="28" fill="#4F46E5" opacity="0.1"/>
+                        <path d="M30 20C26.6863 20 24 22.6863 24 26C24 29.3137 26.6863 32 30 32C33.3137 32 36 29.3137 36 26C36 22.6863 33.3137 20 30 20Z" fill="#4F46E5"/>
+                        <path d="M20 38C20 33.5817 23.5817 30 28 30H32C36.4183 30 40 33.5817 40 38V42H20V38Z" fill="#4F46E5"/>
+                    </svg>
+                </div>
+                <h1>Attendance Management</h1>
+                <p>Biometric Attendance Tracking System</p>
+            </div>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div class="login-error" id="loginError"></div>
+            </form>
+            <div class="login-footer">
+                <p>© 2024 Charitable Trust. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

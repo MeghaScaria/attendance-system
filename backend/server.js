@@ -1,0 +1,593 @@
+// Backend Server for Attendance System
+// Acts as a proxy between your website and E-Time Office Cloud API
+
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors()); // Enable CORS for your frontend
+app.use(express.json());
+
+// JWT Secret (in production, use a strong random string from environment variables)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
+
+// User database (in production, use a real database like MongoDB or PostgreSQL)
+// Default users - passwords will be hashed on server startup
+// Format: 'username': { password: 'hashed_password', name: 'Display Name', role: 'admin' | 'staff' }
+const users = {};
+
+// Initialize default users with hashed passwords
+async function initializeUsers() {
+    // Hash default passwords and store users
+    users['admin'] = {
+        password: await bcrypt.hash('admin123', 10),
+        name: 'Admin User',
+        role: 'admin'
+    };
+    users['staff'] = {
+        password: await bcrypt.hash('staff123', 10),
+        name: 'Staff Member',
+        role: 'staff'
+    };
+    
+    console.log('✓ User accounts initialized');
+}
+
+// Initialize users on startup
+initializeUsers();
+
+// Authentication Middleware
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.status(401).json({ success: false, error: 'Access token required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ success: false, error: 'Invalid or expired token' });
+        }
+        req.user = user;
+        next();
+    });
+}
+
+// E-Time Office Cloud API Configuration
+const E_TIME_API_CONFIG = {
+    baseURL: process.env.E_TIME_API_URL || 'https://api.etimeoffice.com/api', // E-Time Office Cloud API URL
+    corporateId: process.env.E_TIME_CORPORATE_ID || 'PrajaKiranaSeva',
+    username: process.env.E_TIME_USERNAME || 'PrajaKiranaSeva',
+    password: process.env.E_TIME_PASSWORD || 'PrajaKS@123'
+};
+
+// Helper function to make authenticated requests to E-Time Office Cloud
+// E-Time Office Cloud uses /DownloadInOutPunchData endpoint
+async function makeEtimeRequest(params = {}) {
+    try {
+        // Basic Auth: CorporateID:Username:Password:true encoded in base64
+        const authString = `${E_TIME_API_CONFIG.corporateId}:${E_TIME_API_CONFIG.username}:${E_TIME_API_CONFIG.password}:true`;
+        const auth = Buffer.from(authString).toString('base64');
+
+        const response = await axios.get(
+            `${E_TIME_API_CONFIG.baseURL}/DownloadInOutPunchData`,
+            {
+                headers: {
+                    Authorization: `Basic ${auth}`
+                },
+                params
+            }
+        );
+
+        return {
+            success: true,
+            data: response.data.InOutPunchData || []
+        };
+    } catch (error) {
+        console.error("E-Time API Error:", error.response?.status, error.response?.statusText || error.message);
+
+        return {
+            success: false,
+            error: error.response?.data || error.message
+        };
+    }
+}
+
+// Helper function to format date for E-Time API (DD/MM/YYYY format)
+function formatDate(date) {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// Transform E-Time InOutPunchData to school-style attendance format
+// The API already provides INTime, OUTTime, and Status
+function transformAttendanceData(etimeData, filterToday = false) {
+    if (!etimeData || !Array.isArray(etimeData)) {
+        return [];
+    }
+
+    const today = new Date();
+    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+    return etimeData
+        .filter(record => {
+            // Skip invalid records
+            if (!record.Empcode || !record.DateString) return false;
+            
+            // If filtering for today, skip other dates
+            if (filterToday && record.DateString !== todayStr) return false;
+            
+            return true;
+        })
+        .map(record => {
+            const inTime = record.INTime && record.INTime !== '--:--' ? record.INTime : null;
+            const outTime = record.OUTTime && record.OUTTime !== '--:--' ? record.OUTTime : null;
+            const status = record.Status === 'P' ? 'Present' : 'Absent';
+
+            return {
+                id: record.Empcode,
+                name: record.Name || 'Unknown',
+                date: record.DateString,
+                checkIn: inTime,
+                checkOut: outTime,
+                status: status
+            };
+        });
+}
+
+// Format time for display (HH:MM format)
+function formatTimeForDisplay(timeString) {
+    if (!timeString) return null;
+
+    // If already in HH:MM format, return as is
+    if (/^\d{1,2}:\d{2}$/.test(timeString)) {
+        return timeString;
+    }
+
+    // If in HH:MM:SS format, extract HH:MM
+    const timeMatch = timeString.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (timeMatch) {
+        const hours = timeMatch[1].padStart(2, '0');
+        const minutes = timeMatch[2];
+        return `${hours}:${minutes}`;
+    }
+
+    return timeString;
+}
+
+// API Routes
+
+// Health check (public route)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', message: 'Backend running successfully' });
+});
+
+// Login endpoint (public route)
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Username and password are required'
+            });
+        }
+
+        // Find user
+        const user = users[username];
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid username or password'
+            });
+        }
+
+        // Check password
+        const passwordValid = await bcrypt.compare(password, user.password);
+        if (!passwordValid) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid username or password'
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { username: username, name: user.name, role: user.role },
+            JWT_SECRET,
+            { expiresIn: '24h' } // Token expires in 24 hours
+        );
+
+        res.json({
+            success: true,
+            data: {
+                token: token,
+                user: {
+                    username: username,
+                    name: user.name,
+                    role: user.role
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error during login'
+        });
+    }
+});
+
+// Verify token endpoint (protected route - for frontend to check if token is valid)
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
+    res.json({
+        success: true,
+        data: {
+            user: req.user
+        }
+    });
+});
+
+// Get today's attendance (protected route)
+app.get('/api/attendance/today', authenticateToken, async (req, res) => {
+    try {
+        const today = new Date();
+
+        // Call E-Time API with correct parameters
+        const result = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(today),
+            ToDate: formatDate(today)
+        });
+
+        if (!result.success) {
+            return res.status(result.status || 500).json({
+                success: false,
+                error: result.error
+            });
+        }
+
+        // Transform E-Time punch data to frontend format (filter for today only)
+        const transformedData = transformAttendanceData(result.data, true);
+
+        res.json({ success: true, data: transformedData });
+    } catch (error) {
+        console.error('Error fetching today attendance:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get attendance for date range (protected route)
+app.get('/api/attendance/range', authenticateToken, async (req, res) => {
+    try {
+        const { start, end } = req.query;
+        
+        if (!start || !end) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Start and end dates are required (format: YYYY-MM-DD)' 
+            });
+        }
+        
+        // Parse dates and format for E-Time API
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Invalid date format. Use YYYY-MM-DD' 
+            });
+        }
+        
+        // Call E-Time API with correct parameters
+        const result = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(startDate, '00:00'),
+            ToDate: formatDate(endDate, '23:59')
+        });
+        
+        if (!result.success) {
+            return res.status(result.status || 500).json({ 
+                success: false, 
+                error: result.error 
+            });
+        }
+        
+        // Transform E-Time punch data to frontend format
+        const transformedData = transformAttendanceData(result.data);
+        
+        res.json({ success: true, data: transformedData });
+    } catch (error) {
+        console.error('Error fetching attendance range:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get all attendance logs (last 30 days by default) (protected route)
+app.get('/api/attendance/all', authenticateToken, async (req, res) => {
+    try {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30); // Last 30 days
+        
+        // Call E-Time API with correct parameters
+        const result = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(startDate, '00:00'),
+            ToDate: formatDate(endDate, '23:59')
+        });
+        
+        if (!result.success) {
+            return res.status(result.status || 500).json({ 
+                success: false, 
+                error: result.error 
+            });
+        }
+        
+        // Transform E-Time punch data to frontend format
+        const transformedData = transformAttendanceData(result.data);
+        
+        res.json({ success: true, data: transformedData });
+    } catch (error) {
+        console.error('Error fetching all attendance:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get employee-wise data (protected route)
+app.get('/api/attendance/employee/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params; // Employee code
+        let startDate, endDate;
+        
+        // Use query params or default to last 30 days
+        if (req.query.start && req.query.end) {
+            startDate = new Date(req.query.start);
+            endDate = new Date(req.query.end);
+        } else {
+            endDate = new Date();
+            startDate = new Date();
+            startDate.setDate(endDate.getDate() - 30);
+        }
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Invalid date format. Use YYYY-MM-DD' 
+            });
+        }
+        
+        // Call E-Time API with employee code
+        const result = await makeEtimeRequest({
+            Empcode: id, // Use specific employee code
+            FromDate: formatDate(startDate),
+            ToDate: formatDate(endDate)
+        });
+        
+        if (!result.success) {
+            return res.status(result.status || 500).json({ 
+                success: false, 
+                error: result.error 
+            });
+        }
+        
+        // Transform E-Time punch data to frontend format
+        const transformedData = transformAttendanceData(result.data);
+        
+        res.json({ success: true, data: transformedData });
+    } catch (error) {
+        console.error('Error fetching employee attendance:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get children/employees list (protected route)
+// E-Time doesn't have a separate employees endpoint, so we extract unique employees from punch data
+app.get('/api/children', authenticateToken, async (req, res) => {
+    try {
+        // Get attendance data for last 30 days to extract employee list
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+        
+        const result = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(startDate, '00:00'),
+            ToDate: formatDate(endDate, '23:59')
+        });
+        
+        if (!result.success) {
+            return res.status(result.status || 500).json({ 
+                success: false, 
+                error: result.error 
+            });
+        }
+        
+        // Extract unique employees from InOutPunchData
+        const employeeMap = new Map();
+        
+        (result.data || []).forEach(record => {
+            const empCode = record.Empcode || '';
+            const name = record.Name || 'Unknown';
+            
+            if (empCode && !employeeMap.has(empCode)) {
+                employeeMap.set(empCode, {
+                    id: empCode,
+                    empCode: empCode,
+                    name: name,
+                    cardNo: '', // E-Time doesn't provide this in InOutPunchData
+                    age: 0, // E-Time doesn't provide this
+                    grade: '', // E-Time doesn't provide this
+                    photo: name ? name.charAt(0).toUpperCase() : '?'
+                });
+            }
+        });
+        
+        const children = Array.from(employeeMap.values());
+        
+        res.json({ success: true, data: children });
+    } catch (error) {
+        console.error('Error fetching children list:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get dashboard statistics (protected route)
+app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+    try {
+        const today = new Date();
+        
+        // Get today's attendance
+        const todayResult = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(today, '00:00'),
+            ToDate: formatDate(today, '23:59')
+        });
+        
+        if (!todayResult.success) {
+            return res.status(todayResult.status || 500).json({ 
+                success: false, 
+                error: todayResult.error 
+            });
+        }
+        
+        // Get unique employees who punched today (Status = 'P' for Present)
+        const todayEmployees = new Set();
+        (todayResult.data || []).forEach(record => {
+            const empCode = record.Empcode;
+            if (empCode && record.Status === 'P') todayEmployees.add(empCode);
+        });
+        const presentToday = todayEmployees.size;
+        
+        // Get all employees (from last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+        
+        const allEmployeesResult = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(startDate),
+            ToDate: formatDate(endDate)
+        });
+        
+        const allEmployees = new Set();
+        if (allEmployeesResult.success) {
+            (allEmployeesResult.data || []).forEach(record => {
+                const empCode = record.Empcode;
+                if (empCode) allEmployees.add(empCode);
+            });
+        }
+        const totalChildren = allEmployees.size;
+        const absentToday = totalChildren - presentToday;
+        
+        // Calculate monthly attendance rate
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthResult = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(firstDayOfMonth),
+            ToDate: formatDate(today)
+        });
+        
+        let attendanceRate = 0;
+        if (monthResult.success && monthResult.data) {
+            // Count unique employees who attended this month (Status = 'P')
+            const monthEmployees = new Set();
+            monthResult.data.forEach(record => {
+                const empCode = record.Empcode;
+                if (empCode && record.Status === 'P') monthEmployees.add(empCode);
+            });
+            
+            // Calculate rate (employees who attended at least once / total employees)
+            attendanceRate = totalChildren > 0 
+                ? Math.round((monthEmployees.size / totalChildren) * 100)
+                : 0;
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                totalChildren,
+                presentToday,
+                absentToday,
+                attendanceRate
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get recent activity/check-ins (protected route)
+app.get('/api/attendance/recent', authenticateToken, async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const today = new Date();
+        
+        const result = await makeEtimeRequest({
+            Empcode: 'ALL',
+            FromDate: formatDate(today, '00:00'),
+            ToDate: formatDate(today, '23:59')
+        });
+        
+        if (!result.success) {
+            return res.status(result.status || 500).json({ 
+                success: false, 
+                error: result.error 
+            });
+        }
+        
+        const punchData = result.data || [];
+        
+        // Get check-ins for employees with valid INTime (Present status)
+        const checkIns = punchData
+            .filter(record => record.Empcode && record.Status === 'P' && record.INTime && record.INTime !== '--:--')
+            .map(record => ({
+                empCode: record.Empcode,
+                name: record.Name || 'Unknown',
+                inTime: record.INTime,
+                dateString: record.DateString,
+                status: 'Present',
+                avatar: (record.Name || '?').charAt(0).toUpperCase()
+            }))
+            .sort((a, b) => {
+                // Sort by date and time (most recent first)
+                const dateA = `${a.dateString} ${a.inTime}`;
+                const dateB = `${b.dateString} ${b.inTime}`;
+                return dateB.localeCompare(dateA);
+            })
+            .slice(0, limit)
+            .map(item => ({
+                name: item.name,
+                time: `${item.dateString} ${item.inTime}`,
+                status: item.status,
+                avatar: item.avatar
+            }));
+        
+        res.json({ success: true, data: checkIns });
+    } catch (error) {
+        console.error('Error fetching recent activity:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Start server
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`\n🚀 Attendance System Backend Server running on http://127.0.0.1:${PORT}`);
+    console.log(`📡 E-Time Office Cloud API: ${E_TIME_API_CONFIG.baseURL}`);
+    console.log(`👤 Corporate ID: ${E_TIME_API_CONFIG.corporateId}`);
+    console.log(`\n✅ Server is ready to receive requests!\n`);
+});
