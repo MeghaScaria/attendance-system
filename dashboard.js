@@ -53,71 +53,207 @@ async function fetchDashboardData() {
     }
     
     try {
-        // Fetch dashboard stats
+        // Fetch dashboard stats (total children, present today, etc.)
         const statsResult = await ApiService.getDashboardStats();
         
-        if (statsResult.success) {
-            const apiData = statsResult.data;
-            
-            // If API returns all data in one response
-            if (apiData.totalChildren !== undefined) {
-                return transformApiData(apiData);
-            }
-            
-            // Otherwise, fetch additional data
-            const recentResult = await ApiService.getRecentActivity(5);
-            
-            // Fetch weekly data (you may need to calculate from attendance records)
-            const today = new Date();
-            const weekAgo = new Date(today);
-            weekAgo.setDate(today.getDate() - 7);
-            
-            const weeklyResult = await ApiService.getAttendanceRange(
-                weekAgo.toISOString().split('T')[0],
-                today.toISOString().split('T')[0]
-            );
-            
-            // Combine and transform the data
-            return transformApiData({
-                ...apiData,
-                recentActivity: recentResult.success ? recentResult.data : [],
-                weeklyData: weeklyResult.success ? processWeeklyData(weeklyResult.data) : mockData.weeklyData
-            });
-        } else {
-            console.warn('API request failed, using mock data:', statsResult.error);
-            return mockData;
-        }
+        // Fetch recent activity
+        const recentResult = await ApiService.getRecentActivity(5);
+        
+        // Fetch weekly data (last 7 days)
+        const today = new Date();
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        
+        const weeklyResult = await ApiService.getAttendanceRange(
+            weekAgo.toISOString().split('T')[0],
+            today.toISOString().split('T')[0]
+        );
+        
+        // Fetch monthly data (current month)
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthlyResult = await ApiService.getAttendanceRange(
+            firstDayOfMonth.toISOString().split('T')[0],
+            today.toISOString().split('T')[0]
+        );
+        
+        // Process the data
+        const stats = statsResult.success ? statsResult.data : {};
+        const weeklyData = weeklyResult.success ? processWeeklyData(weeklyResult.data) : mockData.weeklyData;
+        const monthlyData = monthlyResult.success ? processMonthlyData(monthlyResult.data, stats.totalChildren || 0) : mockData.monthlyData;
+        const recentActivity = recentResult.success ? recentResult.data : [];
+        
+        return {
+            totalChildren: stats.totalChildren || 0,
+            presentToday: stats.presentToday || 0,
+            absentToday: stats.absentToday || 0,
+            attendanceRate: stats.attendanceRate || 0,
+            weeklyData: weeklyData,
+            monthlyData: monthlyData,
+            recentActivity: recentActivity
+        };
     } catch (error) {
         console.error('Error fetching dashboard data:', error);
         return mockData;
     }
 }
 
+// Parse date from DD/MM/YYYY format
+function parseDate(dateString) {
+    if (!dateString) return null;
+    
+    // Handle DD/MM/YYYY format
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+        const year = parseInt(parts[2], 10);
+        return new Date(year, month, day);
+    }
+    
+    // Fallback to standard date parsing
+    return new Date(dateString);
+}
+
+// Get day name from date
+function getDayName(date) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[date.getDay()];
+}
+
 // Process weekly attendance data from API response
 function processWeeklyData(attendanceRecords) {
-    // TODO: Adjust this based on your vendor's API response format
-    // This processes raw attendance records into weekly summary
-    
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const present = [0, 0, 0, 0, 0, 0, 0];
     const absent = [0, 0, 0, 0, 0, 0, 0];
     
-    // Process attendance records and group by day
-    // This is a placeholder - adjust based on actual API response structure
+    // Group records by date and employee (to count unique employees per day)
+    const dailyAttendance = new Map(); // Key: date string, Value: Set of employee codes
+    
     if (Array.isArray(attendanceRecords)) {
         attendanceRecords.forEach(record => {
-            const date = new Date(record.date || record.timestamp);
-            const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Convert to Mon-Sun
+            const dateStr = record.date || '';
+            if (!dateStr) return;
             
-            if (record.status === 'present' || record.status === 'checkin') {
-                present[dayIndex]++;
-            } else {
-                absent[dayIndex]++;
+            const date = parseDate(dateStr);
+            if (!date || isNaN(date.getTime())) return;
+            
+            // Get date key (YYYY-MM-DD format for consistency)
+            const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            
+            if (!dailyAttendance.has(dateKey)) {
+                dailyAttendance.set(dateKey, {
+                    date: date,
+                    present: new Set(),
+                    absent: new Set()
+                });
+            }
+            
+            const dayData = dailyAttendance.get(dateKey);
+            const empCode = record.id || '';
+            const status = (record.status || '').toLowerCase();
+            
+            if (status === 'present' || status === 'p') {
+                dayData.present.add(empCode);
+            } else if (status === 'absent' || status === 'a') {
+                dayData.absent.add(empCode);
             }
         });
     }
     
-    return { labels: days, present, absent };
+    // Get last 7 days
+    const today = new Date();
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        last7Days.push(date);
+    }
+    
+    // Count attendance for each of the last 7 days
+    last7Days.forEach((date, index) => {
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const dayData = dailyAttendance.get(dateKey);
+        
+        if (dayData) {
+            present[index] = dayData.present.size;
+            absent[index] = dayData.absent.size;
+        }
+    });
+    
+    // Update labels to show actual dates
+    const labels = last7Days.map(date => {
+        const dayName = getDayName(date);
+        const day = date.getDate();
+        return `${dayName} ${day}`;
+    });
+    
+    return { labels, present, absent };
+}
+
+// Process monthly attendance data to calculate weekly percentages
+function processMonthlyData(attendanceRecords, totalChildren) {
+    if (!Array.isArray(attendanceRecords) || attendanceRecords.length === 0) {
+        return mockData.monthlyData;
+    }
+    
+    // Group records by week
+    const weeklyData = new Map();
+    
+    attendanceRecords.forEach(record => {
+        const dateStr = record.date || '';
+        if (!dateStr) return;
+        
+        const date = parseDate(dateStr);
+        if (!date || isNaN(date.getTime())) return;
+        
+        // Get week number (week of month: 1-4 or 1-5)
+        const weekOfMonth = Math.ceil(date.getDate() / 7);
+        const weekKey = `Week ${weekOfMonth}`;
+        
+        if (!weeklyData.has(weekKey)) {
+            weeklyData.set(weekKey, {
+                present: new Set(),
+                absent: new Set()
+            });
+        }
+        
+        const weekData = weeklyData.get(weekKey);
+        const empCode = record.id || '';
+        const status = (record.status || '').toLowerCase();
+        
+        if (status === 'present' || status === 'p') {
+            weekData.present.add(empCode);
+        } else if (status === 'absent' || status === 'a') {
+            weekData.absent.add(empCode);
+        }
+    });
+    
+    // Calculate attendance percentage for each week
+    const labels = [];
+    const attendance = [];
+    
+    // Get current month's weeks
+    const today = new Date();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const weeksInMonth = Math.ceil(daysInMonth / 7);
+    
+    for (let week = 1; week <= weeksInMonth; week++) {
+        const weekKey = `Week ${week}`;
+        const weekData = weeklyData.get(weekKey);
+        
+        labels.push(weekKey);
+        
+        if (weekData && totalChildren > 0) {
+            // Calculate percentage: (unique employees who attended at least once / total children) * 100
+            const uniqueAttendees = weekData.present.size;
+            const attendancePercent = Math.round((uniqueAttendees / totalChildren) * 100);
+            attendance.push(attendancePercent);
+        } else {
+            attendance.push(0);
+        }
+    }
+    
+    return { labels, attendance };
 }
 
 // Initialize dashboard
