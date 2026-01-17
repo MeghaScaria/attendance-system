@@ -1,7 +1,7 @@
 // Attendance page functionality
 
 // Configuration: Set to true to use API, false to use mock data
-const USE_API = false;  // Change to true when your API is ready
+const USE_API = true;  // Using real API data now
 
 // Mock data for fallback/testing (keeping first 25 entries)
 const mockChildrenData = [
@@ -167,8 +167,8 @@ function renderAttendanceCards(data = filteredData) {
                         <td>${record.checkIn || '—'}</td>
                         <td>${record.checkOut || '—'}</td>
                         <td>
-                            <span class="status-badge ${record.status.toLowerCase()}">
-                                ${record.status}
+                            <span class="status-badge ${(record.status || 'Absent').toLowerCase()}">
+                                ${record.status || 'Absent'}
                             </span>
                         </td>
                     </tr>
@@ -180,8 +180,15 @@ function renderAttendanceCards(data = filteredData) {
 
 // Update summary counts
 function updateSummary() {
-    const present = filteredData.filter(c => c.status === 'Present').length;
-    const absent = filteredData.filter(c => c.status === 'Absent').length;
+    // Handle both 'Present' and 'present' (case-insensitive)
+    const present = filteredData.filter(c => {
+        const status = (c.status || '').toLowerCase();
+        return status === 'present' || status === 'p';
+    }).length;
+    const absent = filteredData.filter(c => {
+        const status = (c.status || '').toLowerCase();
+        return status === 'absent' || status === 'a';
+    }).length;
     const total = filteredData.length;
 
     document.getElementById('totalCount').textContent = total;
@@ -194,13 +201,16 @@ function filterByStatus(status) {
     if (status === 'all') {
         filteredData = [...childrenData];
     } else {
-        // Map frontend filter values to backend status values
-        const statusMap = {
-            'present': 'Present',
-            'absent': 'Absent'
-        };
-        const backendStatus = statusMap[status] || status;
-        filteredData = childrenData.filter(record => record.status === backendStatus);
+        // Map frontend filter values to backend status values (case-insensitive)
+        filteredData = childrenData.filter(record => {
+            const recordStatus = (record.status || '').toLowerCase();
+            if (status === 'present') {
+                return recordStatus === 'present' || recordStatus === 'p';
+            } else if (status === 'absent') {
+                return recordStatus === 'absent' || recordStatus === 'a';
+            }
+            return false;
+        });
     }
     renderAttendanceCards();
     updateSummary();
