@@ -453,8 +453,8 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         // Get today's attendance
         const todayResult = await makeEtimeRequest({
             Empcode: 'ALL',
-            FromDate: formatDate(today, '00:00'),
-            ToDate: formatDate(today, '23:59')
+            FromDate: formatDate(today),
+            ToDate: formatDate(today)
         });
         
         if (!todayResult.success) {
@@ -539,8 +539,8 @@ app.get('/api/attendance/recent', authenticateToken, async (req, res) => {
         
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
-            FromDate: formatDate(today, '00:00'),
-            ToDate: formatDate(today, '23:59')
+            FromDate: formatDate(today),
+            ToDate: formatDate(today)
         });
         
         if (!result.success) {
