@@ -24,7 +24,7 @@ function getEmployeeType(empCode) {
 // Fetch all employees
 async function fetchEmployees() {
     try {
-        const result = await ApiService.getChildren();
+        const result = await ApiService.getChildrenList();
         
         if (!result.success) {
             throw new Error(result.error || 'Failed to fetch employees');

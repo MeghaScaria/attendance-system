@@ -63,7 +63,7 @@ async function fetchAbsentees(date) {
         }
         
         // Get all employees list
-        const childrenResult = await ApiService.getChildren();
+        const childrenResult = await ApiService.getChildrenList();
         if (!childrenResult.success) {
             throw new Error('Failed to fetch employees list');
         }
