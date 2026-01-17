@@ -6,7 +6,7 @@
 
 const API_CONFIG = {
     // Backend server URL (where your Node.js server is running)
-    baseURL: 'http://localhost:3000/api',  // Change this to your backend server URL
+    baseURL: 'https://praja-kirana-seva-attendance-system.onrender.com/api',  // Change this to your backend server URL
     
     // API Endpoints (these call your backend, which then calls E-Time Office Cloud)
     endpoints: {
