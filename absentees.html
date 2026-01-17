@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance - Attendance System</title>
+    <title>Absentees - Attendance System</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -28,13 +28,13 @@
                     </svg>
                     Dashboard
                 </a>
-                <a href="attendance.html" class="nav-item active">
+                <a href="attendance.html" class="nav-item">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                     </svg>
                     Attendance
                 </a>
-                <a href="absentees.html" class="nav-item">
+                <a href="absentees.html" class="nav-item active">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -74,28 +74,16 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-content">
-                    <h2>Attendance Records</h2>
+                    <h2>Daily Absentees</h2>
                     <div class="header-actions">
-                        <div class="search-box">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                            <input type="text" id="searchInput" placeholder="Search by name or ID...">
+                        <div class="date-picker-container">
+                            <label for="datePicker" style="margin-right: 8px; color: var(--gray-700); font-weight: 500;">Select Date:</label>
+                            <input type="date" id="datePicker" class="date-input">
                         </div>
-                        <select id="typeFilterSelect" class="select-input">
+                        <select id="typeFilter" class="select-input">
                             <option value="all">All (Students & Teachers)</option>
                             <option value="student">Students Only</option>
                             <option value="teacher">Teachers Only</option>
-                        </select>
-                        <select id="filterSelect" class="select-input">
-                            <option value="all">All Status</option>
-                            <option value="present">Present</option>
-                            <option value="absent">Absent</option>
-                        </select>
-                        <select id="dateSelect" class="select-input">
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
                         </select>
                         <div class="user-profile">
                             <span id="userName">Admin User</span>
@@ -105,23 +93,26 @@
                 </div>
             </header>
 
-            <div class="attendance-content">
-                <div class="attendance-header">
-                    <div class="attendance-summary">
-                        <span class="summary-item">Total: <strong id="totalCount">25</strong></span>
-                        <span class="summary-item">Present: <strong id="presentCount" style="color: #10B981;">22</strong></span>
-                        <span class="summary-item">Absent: <strong id="absentCount" style="color: #EF4444;">3</strong></span>
+            <div class="absentees-content">
+                <div class="absentees-header">
+                    <div class="absentees-summary">
+                        <span class="summary-item">Date: <strong id="selectedDate">Today</strong></span>
+                        <span class="summary-item">Total Absent: <strong id="totalAbsent" style="color: #EF4444;">0</strong></span>
+                        <span class="summary-item">Students: <strong id="absentStudents" style="color: #EF4444;">0</strong></span>
+                        <span class="summary-item">Teachers: <strong id="absentTeachers" style="color: #EF4444;">0</strong></span>
                     </div>
                 </div>
 
-                <div class="attendance-grid" id="attendanceGrid">
-                    <!-- Attendance cards will be populated by JavaScript -->
+                <div class="absentees-list" id="absenteesList">
+                    <div class="loading-state" id="loadingState">
+                        <p>Loading absentees...</p>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
     <script src="script.js"></script>
     <script src="api-config.js"></script>
-    <script src="attendance.js"></script>
+    <script src="absentees.js"></script>
 </body>
 </html>

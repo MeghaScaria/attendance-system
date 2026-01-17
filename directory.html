@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance - Attendance System</title>
+    <title>Directory - Attendance System</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -28,7 +28,7 @@
                     </svg>
                     Dashboard
                 </a>
-                <a href="attendance.html" class="nav-item active">
+                <a href="attendance.html" class="nav-item">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                     </svg>
@@ -40,7 +40,7 @@
                     </svg>
                     Absentees
                 </a>
-                <a href="directory.html" class="nav-item">
+                <a href="directory.html" class="nav-item active">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
@@ -74,7 +74,7 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-content">
-                    <h2>Attendance Records</h2>
+                    <h2>Student & Staff Directory</h2>
                     <div class="header-actions">
                         <div class="search-box">
                             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,20 +82,10 @@
                             </svg>
                             <input type="text" id="searchInput" placeholder="Search by name or ID...">
                         </div>
-                        <select id="typeFilterSelect" class="select-input">
+                        <select id="typeFilter" class="select-input">
                             <option value="all">All (Students & Teachers)</option>
                             <option value="student">Students Only</option>
                             <option value="teacher">Teachers Only</option>
-                        </select>
-                        <select id="filterSelect" class="select-input">
-                            <option value="all">All Status</option>
-                            <option value="present">Present</option>
-                            <option value="absent">Absent</option>
-                        </select>
-                        <select id="dateSelect" class="select-input">
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
                         </select>
                         <div class="user-profile">
                             <span id="userName">Admin User</span>
@@ -105,23 +95,25 @@
                 </div>
             </header>
 
-            <div class="attendance-content">
-                <div class="attendance-header">
-                    <div class="attendance-summary">
-                        <span class="summary-item">Total: <strong id="totalCount">25</strong></span>
-                        <span class="summary-item">Present: <strong id="presentCount" style="color: #10B981;">22</strong></span>
-                        <span class="summary-item">Absent: <strong id="absentCount" style="color: #EF4444;">3</strong></span>
+            <div class="directory-content">
+                <div class="directory-header">
+                    <div class="directory-summary">
+                        <span class="summary-item">Total: <strong id="totalCount">0</strong></span>
+                        <span class="summary-item">Students: <strong id="studentCount" style="color: #4F46E5;">0</strong></span>
+                        <span class="summary-item">Teachers: <strong id="teacherCount" style="color: #10B981;">0</strong></span>
                     </div>
                 </div>
 
-                <div class="attendance-grid" id="attendanceGrid">
-                    <!-- Attendance cards will be populated by JavaScript -->
+                <div class="directory-grid" id="directoryGrid">
+                    <div class="loading-state" id="loadingState">
+                        <p>Loading directory...</p>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
     <script src="script.js"></script>
     <script src="api-config.js"></script>
-    <script src="attendance.js"></script>
+    <script src="directory.js"></script>
 </body>
 </html>
