@@ -56,7 +56,34 @@ git push
 **What we're doing**: We're telling Render.com to create a server that runs your backend code.
 
 1. Go to [Render.com Dashboard](https://dashboard.render.com)
-2. Click **"New +"** button → **"Web Service"**
+2. Click **"New +"** button
+
+   **You'll see several options. Here's what each means:**
+   
+   - **🌐 Web Service** ← **SELECT THIS ONE!** ✅
+     - **What it is**: A server that runs your backend code (Node.js, Python, etc.)
+     - **When to use**: For your backend server (needs to run continuously)
+     - **Why**: Your backend needs to listen for requests and process them
+   
+   - **📄 Static Site** 
+     - **What it is**: Just serves HTML/CSS/JS files (no server code)
+     - **When to use**: For your frontend (we'll use this in Step 4)
+     - **Why**: Frontend is just files, doesn't need a running server
+   
+   - **🔒 Private Service**
+     - **What it is**: Web service but not accessible from internet
+     - **When to use**: Internal services only (not for your project)
+     - **Why**: Your backend needs to be accessible from frontend
+   
+   - **🐳 Background Worker**
+     - **What it is**: Runs code in background (no web interface)
+     - **When to use**: Scheduled tasks, processing jobs (not for your project)
+   
+   - **📦 PostgreSQL / Redis**
+     - **What it is**: Database services
+     - **When to use**: If you need a database (not needed for your project)
+
+3. Click **"Web Service"** ✅
    - **What is a Web Service?** = A server that runs your backend code and responds to requests
 3. Connect your GitHub account if you haven't already
    - **Why?** = So Render can automatically get your code from GitHub
