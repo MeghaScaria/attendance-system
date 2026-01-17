@@ -6,7 +6,8 @@
 //   Username: staff  | Password: staff123
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:3000/api';
+// Use the same backend URL as api-config.js
+const API_BASE_URL = 'https://praja-kirana-seva-attendance-system.onrender.com/api';
 
 // Check if user is logged in (verifies token with backend)
 async function checkAuth() {
