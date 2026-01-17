@@ -35,6 +35,7 @@ const mockChildrenData = [
 let childrenData = [];
 let filteredData = [];
 let employeeTypeMap = {}; // Maps employee code to 'student' or 'teacher'
+let employeeNameMap = {}; // Maps employee code to correct name
 
 // Load employee type mapping from JSON file
 async function loadEmployeeTypes() {
@@ -54,9 +55,32 @@ async function loadEmployeeTypes() {
     }
 }
 
+// Load employee names mapping from JSON file
+async function loadEmployeeNames() {
+    try {
+        const response = await fetch('employee-names.json');
+        if (response.ok) {
+            const data = await response.json();
+            employeeNameMap = data.employeeNames || {};
+            console.log('Loaded employee names:', Object.keys(employeeNameMap).length, 'entries');
+        } else {
+            console.warn('Could not load employee-names.json, using empty mapping');
+            employeeNameMap = {};
+        }
+    } catch (error) {
+        console.warn('Error loading employee names:', error);
+        employeeNameMap = {};
+    }
+}
+
 // Get employee type (student or teacher) based on employee code
 function getEmployeeType(employeeCode) {
     return employeeTypeMap[employeeCode] || 'unknown';
+}
+
+// Get correct employee name (override API name if mapping exists)
+function getEmployeeName(empCode, apiName) {
+    return employeeNameMap[empCode] || apiName || 'Unknown';
 }
 
 // Transform API data to match expected format
@@ -65,7 +89,7 @@ function transformApiChildData(apiChild) {
     const employeeCode = apiChild.id || '';
     return {
         id: employeeCode,
-        name: apiChild.name || 'Unknown',
+        name: getEmployeeName(employeeCode, apiChild.name),
         date: apiChild.date || '',
         checkIn: apiChild.checkIn || null,
         checkOut: apiChild.checkOut || null,
@@ -301,8 +325,8 @@ async function initAttendance() {
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray-500);">Loading attendance data...</div>';
     }
     
-    // Load employee type mapping first
-    await loadEmployeeTypes();
+    // Load employee type and name mappings first
+    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
     
     // Get selected date filter
     const dateSelect = document.getElementById('dateSelect');

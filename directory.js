@@ -1,6 +1,7 @@
 // Directory page functionality
 
 let employeeTypeMap = {};
+let employeeNameMap = {};
 let allEmployees = [];
 
 // Load employee types mapping
@@ -16,9 +17,27 @@ async function loadEmployeeTypes() {
     }
 }
 
+// Load employee names mapping
+async function loadEmployeeNames() {
+    try {
+        const response = await fetch('employee-names.json');
+        if (response.ok) {
+            const data = await response.json();
+            employeeNameMap = data.employeeNames || {};
+        }
+    } catch (error) {
+        console.error('Error loading employee names:', error);
+    }
+}
+
 // Get employee type
 function getEmployeeType(empCode) {
     return employeeTypeMap[empCode] || 'unknown';
+}
+
+// Get correct employee name (override API name if mapping exists)
+function getEmployeeName(empCode, apiName) {
+    return employeeNameMap[empCode] || apiName || 'Unknown';
 }
 
 // Fetch all employees
@@ -53,8 +72,8 @@ function filterEmployees(employees, searchTerm, typeFilter) {
     if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         filtered = filtered.filter(emp => {
-            const name = (emp.name || '').toLowerCase();
             const empCode = (emp.id || emp.empCode || '').toString();
+            const name = getEmployeeName(empCode, emp.name).toLowerCase();
             return name.includes(searchLower) || empCode.includes(searchTerm);
         });
     }
@@ -106,7 +125,7 @@ function renderDirectory(employees) {
     gridContainer.innerHTML = sorted.map(emp => {
         const empCode = emp.id || emp.empCode || '';
         const type = getEmployeeType(empCode);
-        const name = emp.name || 'Unknown';
+        const name = getEmployeeName(empCode, emp.name);
         const avatar = name.charAt(0).toUpperCase();
         
         return `
@@ -124,8 +143,8 @@ function renderDirectory(employees) {
 
 // Initialize directory page
 async function initDirectory() {
-    // Load employee types
-    await loadEmployeeTypes();
+    // Load employee types and names
+    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
     
     // Show loading state
     document.getElementById('loadingState').style.display = 'block';

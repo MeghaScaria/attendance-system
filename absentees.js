@@ -1,6 +1,7 @@
 // Absentees page functionality
 
 let employeeTypeMap = {};
+let employeeNameMap = {};
 
 // Load employee types mapping
 async function loadEmployeeTypes() {
@@ -13,6 +14,24 @@ async function loadEmployeeTypes() {
     } catch (error) {
         console.error('Error loading employee types:', error);
     }
+}
+
+// Load employee names mapping
+async function loadEmployeeNames() {
+    try {
+        const response = await fetch('employee-names.json');
+        if (response.ok) {
+            const data = await response.json();
+            employeeNameMap = data.employeeNames || {};
+        }
+    } catch (error) {
+        console.error('Error loading employee names:', error);
+    }
+}
+
+// Get correct employee name (override API name if mapping exists)
+function getEmployeeName(empCode, apiName) {
+    return employeeNameMap[empCode] || apiName || 'Unknown';
 }
 
 // Parse date from DD/MM/YYYY format
@@ -146,7 +165,7 @@ function renderAbsentees(absentees, selectedType = 'all') {
     listContainer.innerHTML = filteredAbsentees.map(emp => {
         const empCode = emp.id || emp.empCode || '';
         const type = getEmployeeType(empCode);
-        const name = emp.name || 'Unknown';
+        const name = getEmployeeName(empCode, emp.name);
         const avatar = name.charAt(0).toUpperCase();
         
         return `
@@ -166,8 +185,8 @@ function renderAbsentees(absentees, selectedType = 'all') {
 
 // Initialize absentees page
 async function initAbsentees() {
-    // Load employee types
-    await loadEmployeeTypes();
+    // Load employee types and names
+    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
     
     // Set default date to today
     const datePicker = document.getElementById('datePicker');

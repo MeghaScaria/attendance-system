@@ -1,0 +1,32 @@
+{
+  "employeeNames": {
+    "101": "Dr Rahul Gali",
+    "102": "Lakshmi",
+    "103": "Ramaiah",
+    "104": "Shiv Kumar",
+    "105": "Thowshif",
+    "106": "Tribhuvan",
+    "107": "Utpal",
+    "2001": "Churanth",
+    "2002": "Yashwant NK",
+    "2003": "Abhinezril",
+    "2004": "Anok",
+    "2005": "Chinmayi",
+    "2006": "Daniel",
+    "2007": "Devid",
+    "2008": "Hemant",
+    "2009": "Hitesh Kumar Das",
+    "2010": "Krupananda",
+    "2011": "Lokesh",
+    "2012": "Manteshwamy",
+    "2013": "Novith",
+    "2014": "Rakshith",
+    "2015": "Sharath",
+    "2016": "Vasant Kumar",
+    "2017": "Vijay",
+    "2018": "Yashwant N",
+    "2019": "Yashwant NK"
+  },
+  "notes": "This file maps employee codes (Empcode) to their correct names. Use this to override names from the E-Time API.",
+  "instructions": "If names in the API are incorrect, update this file with the correct names."
+}
