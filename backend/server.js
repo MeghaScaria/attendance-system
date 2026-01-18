@@ -474,14 +474,37 @@ let employeeTypeMap = {};
 function loadEmployeeTypes() {
     try {
         const typesPath = path.join(__dirname, '..', 'data', 'employee-types.json');
+        console.log('Loading employee types from:', typesPath);
         if (fs.existsSync(typesPath)) {
             const typesData = JSON.parse(fs.readFileSync(typesPath, 'utf8'));
             employeeTypeMap = typesData.employeeTypes || {};
             console.log('✓ Loaded employee types:', Object.keys(employeeTypeMap).length, 'entries');
+        } else {
+            console.warn('⚠ employee-types.json not found at:', typesPath);
+            // Fallback: hardcoded employee types
+            employeeTypeMap = {
+                "101": "teacher", "102": "teacher", "103": "teacher", "104": "teacher",
+                "105": "teacher", "106": "teacher", "107": "teacher",
+                "2001": "student", "2002": "student", "2003": "student", "2004": "student",
+                "2005": "student", "2006": "student", "2007": "student", "2008": "student",
+                "2009": "student", "2010": "student", "2011": "student", "2012": "student",
+                "2013": "student", "2014": "student", "2015": "student", "2016": "student",
+                "2017": "student", "2018": "student", "2019": "student"
+            };
+            console.log('✓ Using fallback employee types');
         }
     } catch (error) {
         console.error('Error loading employee types:', error);
-        employeeTypeMap = {};
+        // Fallback: hardcoded employee types
+        employeeTypeMap = {
+            "101": "teacher", "102": "teacher", "103": "teacher", "104": "teacher",
+            "105": "teacher", "106": "teacher", "107": "teacher",
+            "2001": "student", "2002": "student", "2003": "student", "2004": "student",
+            "2005": "student", "2006": "student", "2007": "student", "2008": "student",
+            "2009": "student", "2010": "student", "2011": "student", "2012": "student",
+            "2013": "student", "2014": "student", "2015": "student", "2016": "student",
+            "2017": "student", "2018": "student", "2019": "student"
+        };
     }
 }
 
