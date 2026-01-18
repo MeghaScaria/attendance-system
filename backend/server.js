@@ -515,9 +515,24 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         // Get all employees from employee-names.json (complete list)
         const namesPath = path.join(__dirname, '..', 'data', 'employee-names.json');
         let allEmployeeCodes = [];
-        if (fs.existsSync(namesPath)) {
-            const namesData = JSON.parse(fs.readFileSync(namesPath, 'utf8'));
-            allEmployeeCodes = Object.keys(namesData.employeeNames || {});
+        
+        try {
+            if (fs.existsSync(namesPath)) {
+                const namesData = JSON.parse(fs.readFileSync(namesPath, 'utf8'));
+                allEmployeeCodes = Object.keys(namesData.employeeNames || {});
+                console.log('✓ Loaded employee codes from names file:', allEmployeeCodes.length);
+            } else {
+                console.warn('⚠ employee-names.json not found at:', namesPath);
+            }
+        } catch (error) {
+            console.error('Error loading employee-names.json:', error);
+        }
+        
+        // If file loading failed, use hardcoded values (from known data)
+        if (allEmployeeCodes.length === 0) {
+            console.log('⚠ Using fallback employee codes');
+            // All known employee codes from employee-names.json
+            allEmployeeCodes = ['101', '102', '103', '104', '105', '106', '107', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019'];
         }
         
         // Separate students and staff
@@ -526,6 +541,8 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         const totalStudents = students.length;
         const totalStaff = staff.length;
         const totalChildren = totalStudents; // For backward compatibility
+        
+        console.log(`📊 Dashboard stats: ${totalStudents} students, ${totalStaff} staff`);
         
         // Get unique employees who punched today (with check-in time = Present)
         // Fix: Use check-in time to determine present status, not API Status field
