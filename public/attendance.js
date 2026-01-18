@@ -87,13 +87,20 @@ function getEmployeeName(empCode, apiName) {
 function transformApiChildData(apiChild) {
     // New format directly from backend: id, name, date, checkIn, checkOut, status
     const employeeCode = apiChild.id || '';
+    
+    // Fix: If checkIn exists, status should be Present
+    let status = apiChild.status || 'Absent';
+    if (apiChild.checkIn && apiChild.checkIn !== '--:--' && apiChild.checkIn !== null) {
+        status = 'Present';
+    }
+    
     return {
         id: employeeCode,
         name: getEmployeeName(employeeCode, apiChild.name),
         date: apiChild.date || '',
         checkIn: apiChild.checkIn || null,
         checkOut: apiChild.checkOut || null,
-        status: apiChild.status || 'Absent',
+        status: status,
         type: getEmployeeType(employeeCode) // Add type: 'student', 'teacher', or 'unknown'
     };
 }
@@ -120,6 +127,53 @@ function formatTime(timeString) {
     } catch (e) {
         return timeString;
     }
+}
+
+// Create complete employee list from employee-names.json
+function createCompleteEmployeeList(attendanceRecords = []) {
+    // Create a map of attendance records by employee code
+    const attendanceMap = new Map();
+    attendanceRecords.forEach(record => {
+        const empCode = record.id || '';
+        if (empCode) {
+            attendanceMap.set(empCode, record);
+        }
+    });
+    
+    // Get today's date string in DD/MM/YYYY format
+    const today = new Date();
+    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    
+    // Create entries for ALL employees from employee-names.json
+    const allEmployees = [];
+    
+    // Get all employee codes from employeeNameMap
+    Object.keys(employeeNameMap).forEach(empCode => {
+        const name = employeeNameMap[empCode];
+        const attendanceRecord = attendanceMap.get(empCode);
+        
+        if (attendanceRecord) {
+            // Employee has attendance record - use it
+            allEmployees.push({
+                ...attendanceRecord,
+                name: getEmployeeName(empCode, attendanceRecord.name),
+                type: getEmployeeType(empCode)
+            });
+        } else {
+            // Employee has no attendance record - create empty entry
+            allEmployees.push({
+                id: empCode,
+                name: name,
+                date: todayStr,
+                checkIn: null,
+                checkOut: null,
+                status: 'Absent',
+                type: getEmployeeType(empCode)
+            });
+        }
+    });
+    
+    return allEmployees;
 }
 
 // Fetch attendance data from API
@@ -156,6 +210,8 @@ async function fetchAttendanceData(dateFilter = 'today') {
                 result = await ApiService.getTodayAttendance();
         }
         
+        let attendanceRecords = [];
+        
         if (result.success && result.data) {
             // Handle different API response formats
             let children = [];
@@ -171,18 +227,21 @@ async function fetchAttendanceData(dateFilter = 'today') {
             }
             
             // Transform each child's data
-            return children.map(transformApiChildData).map(child => ({
+            attendanceRecords = children.map(transformApiChildData).map(child => ({
                 ...child,
                 checkIn: formatTime(child.checkIn),
                 checkOut: formatTime(child.checkOut)
             }));
-        } else {
-            console.warn('API request failed, using mock data:', result.error);
-            return mockChildrenData;
         }
+        
+        // Create complete list with all employees (including those without attendance)
+        const completeList = createCompleteEmployeeList(attendanceRecords);
+        
+        return completeList;
     } catch (error) {
         console.error('Error fetching attendance data:', error);
-        return mockChildrenData;
+        // Even on error, return complete employee list
+        return createCompleteEmployeeList([]);
     }
 }
 

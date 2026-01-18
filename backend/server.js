@@ -145,7 +145,17 @@ function transformAttendanceData(etimeData, filterToday = false) {
         .map(record => {
             const inTime = record.INTime && record.INTime !== '--:--' ? record.INTime : null;
             const outTime = record.OUTTime && record.OUTTime !== '--:--' ? record.OUTTime : null;
-            const status = record.Status === 'P' ? 'Present' : 'Absent';
+            
+            // Fix: If someone has a check-in time, they are Present
+            // Only mark as Absent if there's no check-in time AND status is 'A'
+            let status = 'Absent';
+            if (inTime) {
+                // Has check-in time = Present
+                status = 'Present';
+            } else if (record.Status === 'P') {
+                // API says Present but no check-in time (edge case)
+                status = 'Present';
+            }
 
             return {
                 id: record.Empcode,
