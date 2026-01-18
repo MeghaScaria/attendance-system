@@ -15,6 +15,18 @@ const PORT = process.env.PORT || 3000;
 app.use(cors()); // Enable CORS for your frontend
 app.use(express.json());
 
+// Serve static files from public directory (frontend)
+const path = require('path');
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Serve data files from data directory
+app.use('/data', express.static(path.join(__dirname, '..', 'data')));
+
+// Serve index.html for root path
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
 // JWT Secret (in production, use a strong random string from environment variables)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
 

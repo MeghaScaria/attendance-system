@@ -1,0 +1,74 @@
+heyy so i am a computer science student in college trying to make a website for a non profit organization which takes care of childern. i dont have much experience doing anything of this scale but i am intending to make a website that would display the attendance logs for the childrent that live there and i need the principal there to be able to login to the website and access the student attendace details and that is what this project is about. we will be installing a fingerprint machine in the orphanage and the children will be logging in their finger prints in the morning and in the evening and the details from the fingerprint machine is going to a cloud server that the fingerprint machine's company has made and to access those attendance log details, the company has given apis and the most useful one that i have found is "https://api.etimeoffice.com/api/DownloadInOutPunchData?Empcode=ALL&FromDate=10/11/2025&ToDate=15/01/2026 " which i tested in postman along with putting "PrajaKiranaSeva:PrajaKiranaSeva:PrajaKS@123:true" in the username of the Basic Auth option in the authentication tab of the postman interface and this is a sample response that i got "{
+    "InOutPunchData": [
+        {
+            "Empcode": "0001",
+            "INTime": "13:10",
+            "OUTTime": "16:40",
+            "WorkTime": "03:30",
+            "OverTime": "00:00",
+            "BreakTime": "00:00",
+            "Status": "P",
+            "DateString": "01/01/2026",
+            "Remark": "LT-EO",
+            "Erl_Out": "02:20",
+            "Late_In": "03:10",
+            "Name": "Default"
+        },
+        {
+            "Empcode": "0001",
+            "INTime": "--:--",
+            "OUTTime": "--:--",
+            "WorkTime": "00:00",
+            "OverTime": "00:00",
+            "BreakTime": "00:00",
+            "Status": "A",
+            "DateString": "02/01/2026",
+            "Remark": "--",
+            "Erl_Out": "00:00",
+            "Late_In": "00:00",
+            "Name": "Default"
+        },
+        {
+            "Empcode": "0001",
+            "INTime": "--:--",
+            "OUTTime": "--:--",
+            "WorkTime": "00:00",
+            "OverTime": "00:00",
+            "BreakTime": "00:00",
+            "Status": "A",
+            "DateString": "03/01/2026",
+            "Remark": "--",
+            "Erl_Out": "00:00",
+            "Late_In": "00:00",
+            "Name": "Default"
+        },
+        {
+            "Empcode": "0001",
+            "INTime": "--:--",
+            "OUTTime": "--:--",
+            "WorkTime": "00:00",
+            "OverTime": "00:00",
+            "BreakTime": "00:00",
+            "Status": "A",
+            "DateString": "04/01/2026",
+            "Remark": "--",
+            "Erl_Out": "00:00",
+            "Late_In": "00:00",
+            "Name": "Default"
+        },
+        {
+            "Empcode": "0001",
+            "INTime": "--:--",
+            "OUTTime": "--:--",
+            "WorkTime": "00:00",
+            "OverTime": "00:00",
+            "BreakTime": "00:00",
+            "Status": "A",
+            "DateString": "05/01/2026",
+            "Remark": "--",
+            "Erl_Out": "00:00",
+            "Late_In": "00:00",
+            "Name": "Default"
+        }
+}
+" maybe we could try and parse this somehow and display the attendace details on the website? also i have one more concern. i dont think the principal has any ide that will be able to run the website on their computer so should i host the website on the internet? what do you think i should do? give me your suggestions so that we can make this project as optimised and accurate to what i want as possible. please ask me if you have any questions that you wanna clarify about before starting to work on this.

@@ -238,9 +238,12 @@ Render can host your frontend HTML files for free as a **Static Site**.
 
    - **Name**: `attendance-system-frontend`
    - **Branch**: `main`
-   - **Root Directory**: **Leave empty** (your HTML files are in the root)
+   - **Root Directory**: **Leave empty** (your HTML files are in `public/` folder)
+     - *If it requires a value, enter `.` (single dot = current directory)*
    - **Build Command**: **Leave empty** (no build needed for plain HTML/JS)
-   - **Publish Directory**: **Leave empty** (files are in root)
+   - **Publish Directory**: **Enter `public`** (the folder containing your HTML files)
+     - *This tells Render to publish files from the `public/` directory*
+     - *All your HTML, CSS, and JS files are now in the `public/` folder*
 
 5. Click **"Create Static Site"**
 

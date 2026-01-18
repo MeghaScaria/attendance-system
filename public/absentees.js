@@ -6,7 +6,7 @@ let employeeNameMap = {};
 // Load employee types mapping
 async function loadEmployeeTypes() {
     try {
-        const response = await fetch('employee-types.json');
+        const response = await fetch('/data/employee-types.json');
         if (response.ok) {
             const data = await response.json();
             employeeTypeMap = data.employeeTypes || {};
@@ -19,7 +19,7 @@ async function loadEmployeeTypes() {
 // Load employee names mapping
 async function loadEmployeeNames() {
     try {
-        const response = await fetch('employee-names.json');
+        const response = await fetch('/data/employee-names.json');
         if (response.ok) {
             const data = await response.json();
             employeeNameMap = data.employeeNames || {};

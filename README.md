@@ -38,13 +38,26 @@ Or
 
 ```
 .
-├── index.html          # Login page
-├── dashboard.html      # Main dashboard
-├── attendance.html     # Attendance records page
-├── styles.css          # All styling
-├── script.js           # Authentication and shared functions
-├── dashboard.js        # Dashboard-specific functionality
-├── attendance.js       # Attendance page functionality
+├── public/             # Frontend files (HTML, CSS, JS)
+│   ├── index.html      # Login page
+│   ├── dashboard.html  # Main dashboard
+│   ├── attendance.html # Attendance records page
+│   ├── absentees.html  # Absentees page
+│   ├── directory.html  # Directory page
+│   ├── styles.css      # All styling
+│   ├── script.js       # Authentication and shared functions
+│   ├── dashboard.js    # Dashboard-specific functionality
+│   ├── attendance.js   # Attendance page functionality
+│   ├── absentees.js    # Absentees page functionality
+│   ├── directory.js    # Directory page functionality
+│   └── api-config.js   # API configuration
+├── backend/            # Backend server code
+│   ├── server.js       # Main server file
+│   └── package.json    # Backend dependencies
+├── data/               # Data files
+│   ├── employee-types.json  # Employee type mappings
+│   └── employee-names.json   # Employee name mappings
+├── docs/               # Documentation files
 └── README.md           # This file
 ```
 
