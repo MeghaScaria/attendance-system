@@ -86,50 +86,93 @@
             </header>
 
             <div class="dashboard-content">
-                <!-- Stats Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #4F46E5;">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                            </svg>
+                <!-- Student Stats Cards -->
+                <div class="stats-section">
+                    <h3 style="margin-bottom: 16px; color: var(--gray-700); font-size: 18px; font-weight: 600;">Student Attendance</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #4F46E5;">
+                                <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalStudents">19</h3>
+                                <p>Total Students</p>
+                            </div>
                         </div>
-                        <div class="stat-content">
-                            <h3 id="totalChildren">25</h3>
-                            <p>Total Children</p>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #10B981;">
+                                <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="presentStudents">0</h3>
+                                <p>Present Today</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #F59E0B;">
+                                <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="absentStudents">0</h3>
+                                <p>Absent Today</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #EF4444;">
+                                <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="attendanceRate">0%</h3>
+                                <p>Monthly Average</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #10B981;">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
+                </div>
+
+                <!-- Staff Stats Cards -->
+                <div class="stats-section" style="margin-top: 32px;">
+                    <h3 style="margin-bottom: 16px; color: var(--gray-700); font-size: 18px; font-weight: 600;">Staff Attendance</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #6366F1;">
+                                <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalStaff">7</h3>
+                                <p>Total Staff</p>
+                            </div>
                         </div>
-                        <div class="stat-content">
-                            <h3 id="presentToday">22</h3>
-                            <p>Present Today</p>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #10B981;">
+                                <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="presentStaff">0</h3>
+                                <p>Present Today</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #F59E0B;">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="absentToday">3</h3>
-                            <p>Absent Today</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #EF4444;">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                            </svg>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="attendanceRate">88%</h3>
-                            <p>Monthly Average</p>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #F59E0B;">
+                                <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="absentStaff">0</h3>
+                                <p>Absent Today</p>
+                            </div>
                         </div>
                     </div>
                 </div>

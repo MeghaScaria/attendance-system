@@ -289,10 +289,16 @@ function hideLoadingState() {
 
 // Update statistics
 function updateStats(data) {
-    document.getElementById('totalChildren').textContent = data.totalChildren || 0;
-    document.getElementById('presentToday').textContent = data.presentToday || 0;
-    document.getElementById('absentToday').textContent = data.absentToday || 0;
+    // Student stats
+    document.getElementById('totalStudents').textContent = data.totalStudents || 0;
+    document.getElementById('presentStudents').textContent = data.presentStudents || 0;
+    document.getElementById('absentStudents').textContent = data.absentStudents || 0;
     document.getElementById('attendanceRate').textContent = (data.attendanceRate || 0) + '%';
+    
+    // Staff stats
+    document.getElementById('totalStaff').textContent = data.totalStaff || 0;
+    document.getElementById('presentStaff').textContent = data.presentStaff || 0;
+    document.getElementById('absentStaff').textContent = data.absentStaff || 0;
 }
 
 // Initialize weekly attendance chart
