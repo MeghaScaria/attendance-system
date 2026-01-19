@@ -582,12 +582,12 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         const todayPresentStaff = new Set();
         
         (todayResult.data || []).forEach(record => {
-            const empCode = record.Empcode;
+            const empCode = normalizeEmpCode(record.Empcode);
             // If they have a check-in time, they are present
             const inTime = record.INTime && record.INTime !== '--:--' && record.INTime !== null;
             
             if (empCode && inTime) {
-                todayPresentEmployees.add(empCode);
+                todayPresentEmployees.add(empCode); // Now always string
                 const type = getEmployeeType(empCode);
                 if (type === 'student') {
                     todayPresentStudents.add(empCode);
