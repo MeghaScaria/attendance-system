@@ -129,38 +129,114 @@ async function fetchAbsentees(date) {
     }
 }
 
-// Render absentees list
+// Render absentees list with separate sections
 function renderAbsentees(absentees, selectedType = 'all') {
     const listContainer = document.getElementById('absenteesList');
     
     if (!listContainer) return;
     
-    // Filter by type if needed
-    let filteredAbsentees = absentees;
-    if (selectedType !== 'all') {
-        filteredAbsentees = absentees.filter(emp => {
-            const empCode = emp.id || emp.empCode || '';
-            return getEmployeeType(empCode) === selectedType;
-        });
-    }
-    
-    // Update counts
-    const totalAbsent = filteredAbsentees.length;
-    const absentStudents = filteredAbsentees.filter(emp => {
+    // Separate students and teachers
+    const absentStudents = absentees.filter(emp => {
         const empCode = emp.id || emp.empCode || '';
         return getEmployeeType(empCode) === 'student';
-    }).length;
-    const absentTeachers = filteredAbsentees.filter(emp => {
+    });
+    
+    const absentTeachers = absentees.filter(emp => {
         const empCode = emp.id || emp.empCode || '';
         return getEmployeeType(empCode) === 'teacher';
-    }).length;
+    });
+    
+    // Update counts
+    const totalAbsent = absentees.length;
+    const studentCount = absentStudents.length;
+    const teacherCount = absentTeachers.length;
     
     document.getElementById('totalAbsent').textContent = totalAbsent;
-    document.getElementById('absentStudents').textContent = absentStudents;
-    document.getElementById('absentTeachers').textContent = absentTeachers;
+    document.getElementById('absentStudents').textContent = studentCount;
+    document.getElementById('absentTeachers').textContent = teacherCount;
     
-    if (filteredAbsentees.length === 0) {
-        listContainer.innerHTML = `
+    // Sort by name
+    absentStudents.sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
+    absentTeachers.sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
+    // Render based on selected type
+    let html = '';
+    
+    if (selectedType === 'all' || selectedType === 'student') {
+        // Students section
+        html += `
+            <div class="absentees-section">
+                <h3 class="section-title">Students (${studentCount})</h3>
+                <div class="absentees-section-content">
+                    ${studentCount === 0 ? `
+                        <div class="empty-state-small">
+                            <p>No students absent</p>
+                        </div>
+                    ` : absentStudents.map(emp => {
+                        const empCode = emp.id || emp.empCode || '';
+                        const name = getEmployeeName(empCode, emp.name);
+                        const avatar = name.charAt(0).toUpperCase();
+                        return `
+                            <div class="absentee-card">
+                                <div class="absentee-avatar">${avatar}</div>
+                                <div class="absentee-info">
+                                    <h4>${name}</h4>
+                                    <p>ID: ${empCode}</p>
+                                </div>
+                                <div class="absentee-type">
+                                    <span class="type-badge type-student">Student</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    if (selectedType === 'all' || selectedType === 'teacher') {
+        // Teachers section
+        html += `
+            <div class="absentees-section">
+                <h3 class="section-title">Teachers (${teacherCount})</h3>
+                <div class="absentees-section-content">
+                    ${teacherCount === 0 ? `
+                        <div class="empty-state-small">
+                            <p>No teachers absent</p>
+                        </div>
+                    ` : absentTeachers.map(emp => {
+                        const empCode = emp.id || emp.empCode || '';
+                        const name = getEmployeeName(empCode, emp.name);
+                        const avatar = name.charAt(0).toUpperCase();
+                        return `
+                            <div class="absentee-card">
+                                <div class="absentee-avatar">${avatar}</div>
+                                <div class="absentee-info">
+                                    <h4>${name}</h4>
+                                    <p>ID: ${empCode}</p>
+                                </div>
+                                <div class="absentee-type">
+                                    <span class="type-badge type-teacher">Teacher</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    if (totalAbsent === 0) {
+        html = `
             <div class="empty-state">
                 <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--gray-400); margin-bottom: 16px;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -169,35 +245,9 @@ function renderAbsentees(absentees, selectedType = 'all') {
                 <p>Everyone is present on this date!</p>
             </div>
         `;
-        return;
     }
     
-    // Sort by name
-    filteredAbsentees.sort((a, b) => {
-        const nameA = (a.name || '').toLowerCase();
-        const nameB = (b.name || '').toLowerCase();
-        return nameA.localeCompare(nameB);
-    });
-    
-    listContainer.innerHTML = filteredAbsentees.map(emp => {
-        const empCode = emp.id || emp.empCode || '';
-        const type = getEmployeeType(empCode);
-        const name = getEmployeeName(empCode, emp.name);
-        const avatar = name.charAt(0).toUpperCase();
-        
-        return `
-            <div class="absentee-card">
-                <div class="absentee-avatar">${avatar}</div>
-                <div class="absentee-info">
-                    <h4>${name}</h4>
-                    <p>ID: ${empCode}</p>
-                </div>
-                <div class="absentee-type">
-                    <span class="type-badge type-${type}">${type === 'student' ? 'Student' : type === 'teacher' ? 'Teacher' : 'Unknown'}</span>
-                </div>
-            </div>
-        `;
-    }).join('');
+    listContainer.innerHTML = html;
 }
 
 // Initialize absentees page
