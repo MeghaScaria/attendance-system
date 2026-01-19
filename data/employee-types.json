@@ -24,8 +24,7 @@
     "2015": "student",
     "2016": "student",
     "2017": "student",
-    "2018": "student",
-    "2019": "student"
+    "2018": "student"
   },
   "notes": "This file maps employee codes (Empcode) to their type: 'student' or 'teacher'. Staff members are mapped as 'teacher'.",
   "instructions": "Add employee codes from your Excel file here. Format: \"EMPLOYEE_CODE\": \"student\" or \"teacher\"",

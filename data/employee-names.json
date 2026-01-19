@@ -24,8 +24,7 @@
     "2015": "Sharath",
     "2016": "Vasant Kumar",
     "2017": "Vijay",
-    "2018": "Yashwant N",
-    "2019": "Yashwant NK"
+    "2018": "Yashwant N"
   },
   "notes": "This file maps employee codes (Empcode) to their correct names. Use this to override names from the E-Time API.",
   "instructions": "If names in the API are incorrect, update this file with the correct names."
