@@ -30,9 +30,16 @@ async function loadEmployeeNames() {
     }
 }
 
-// Get employee type
+// Normalize employee code to string
+function normalizeEmpCode(empCode) {
+    if (empCode === null || empCode === undefined) return '';
+    return String(empCode).trim();
+}
+
+// Get employee type (handles both string and number)
 function getEmployeeType(empCode) {
-    return employeeTypeMap[empCode] || 'unknown';
+    const normalized = normalizeEmpCode(empCode);
+    return employeeTypeMap[normalized] || 'unknown';
 }
 
 // Get correct employee name (override API name if mapping exists)

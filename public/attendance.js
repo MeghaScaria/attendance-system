@@ -73,9 +73,16 @@ async function loadEmployeeNames() {
     }
 }
 
-// Get employee type (student or teacher) based on employee code
+// Normalize employee code to string
+function normalizeEmpCode(empCode) {
+    if (empCode === null || empCode === undefined) return '';
+    return String(empCode).trim();
+}
+
+// Get employee type (student or teacher) based on employee code (handles both string and number)
 function getEmployeeType(employeeCode) {
-    return employeeTypeMap[employeeCode] || 'unknown';
+    const normalized = normalizeEmpCode(employeeCode);
+    return employeeTypeMap[normalized] || 'unknown';
 }
 
 // Get correct employee name (override API name if mapping exists)

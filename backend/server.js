@@ -442,13 +442,13 @@ app.get('/api/children', authenticateToken, async (req, res) => {
         const employeeMap = new Map();
         
         (result.data || []).forEach(record => {
-            const empCode = record.Empcode || '';
+            const empCode = normalizeEmpCode(record.Empcode);
             const name = record.Name || 'Unknown';
             
             if (empCode && !employeeMap.has(empCode)) {
                 employeeMap.set(empCode, {
-                    id: empCode,
-                    empCode: empCode,
+                    id: empCode, // Always string
+                    empCode: empCode, // Always string
                     name: name,
                     cardNo: '', // E-Time doesn't provide this in InOutPunchData
                     age: 0, // E-Time doesn't provide this
@@ -511,9 +511,16 @@ function loadEmployeeTypes() {
 // Load employee types on server start
 loadEmployeeTypes();
 
-// Helper function to get employee type
+// Normalize employee code to string (handles both number and string)
+function normalizeEmpCode(empCode) {
+    if (empCode === null || empCode === undefined) return '';
+    return String(empCode).trim();
+}
+
+// Helper function to get employee type (handles both string and number)
 function getEmployeeType(empCode) {
-    return employeeTypeMap[empCode] || 'unknown';
+    const normalized = normalizeEmpCode(empCode);
+    return employeeTypeMap[normalized] || 'unknown';
 }
 
 // Get dashboard statistics (protected route)
@@ -609,10 +616,10 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
             // Count unique students who attended this month (with check-in time)
             const monthStudents = new Set();
             monthResult.data.forEach(record => {
-                const empCode = record.Empcode;
+                const empCode = normalizeEmpCode(record.Empcode);
                 const inTime = record.INTime && record.INTime !== '--:--' && record.INTime !== null;
                 if (empCode && inTime && getEmployeeType(empCode) === 'student') {
-                    monthStudents.add(empCode);
+                    monthStudents.add(empCode); // Now always string
                 }
             });
             
@@ -666,9 +673,12 @@ app.get('/api/attendance/recent', authenticateToken, async (req, res) => {
         
         // Get check-ins for employees with valid INTime (Present status)
         const checkIns = punchData
-            .filter(record => record.Empcode && record.Status === 'P' && record.INTime && record.INTime !== '--:--')
+            .filter(record => {
+                const empCode = normalizeEmpCode(record.Empcode);
+                return empCode && record.Status === 'P' && record.INTime && record.INTime !== '--:--';
+            })
             .map(record => ({
-                empCode: record.Empcode,
+                empCode: normalizeEmpCode(record.Empcode), // Always string
                 name: record.Name || 'Unknown',
                 inTime: record.INTime,
                 dateString: record.DateString,

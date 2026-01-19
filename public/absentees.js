@@ -66,9 +66,16 @@ function formatDateForDisplay(date) {
     return date.toLocaleDateString('en-US', options);
 }
 
-// Get employee type
+// Normalize employee code to string
+function normalizeEmpCode(empCode) {
+    if (empCode === null || empCode === undefined) return '';
+    return String(empCode).trim();
+}
+
+// Get employee type (handles both string and number)
 function getEmployeeType(empCode) {
-    return employeeTypeMap[empCode] || 'unknown';
+    const normalized = normalizeEmpCode(empCode);
+    return employeeTypeMap[normalized] || 'unknown';
 }
 
 // Create complete employee list from employee-names.json
@@ -114,11 +121,12 @@ async function fetchAbsentees(date) {
         if (result.success && result.data) {
             const attendanceRecords = result.data || [];
             attendanceRecords.forEach(record => {
-                const empCode = record.id || record.empCode || '';
+                // Normalize to string to ensure consistent comparison
+                const empCode = String(record.id || record.empCode || '').trim();
                 const checkIn = record.checkIn;
                 // If they have a check-in time, they are present
                 if (empCode && checkIn && checkIn !== '--:--' && checkIn !== null && checkIn !== '') {
-                    presentEmployees.add(empCode);
+                    presentEmployees.add(empCode); // Always string
                 }
             });
         }
@@ -128,9 +136,10 @@ async function fetchAbsentees(date) {
         // Find absentees (employees from our complete list who are NOT in present list)
         // IMPORTANT: Only include employees from employee-names.json, ignore any from API that aren't in our list
         const absentees = allEmployees.filter(emp => {
-            const empCode = emp.id || emp.empCode || '';
+            // Normalize to string to ensure consistent comparison
+            const empCode = String(emp.id || emp.empCode || '').trim();
             // Only include if they're in our employee list AND not present
-            return !presentEmployees.has(empCode);
+            return empCode && !presentEmployees.has(empCode);
         });
         
         console.log('Total absentees:', absentees.length);
@@ -150,12 +159,12 @@ function renderAbsentees(absentees, selectedType = 'all') {
     
     // Separate students and teachers
     const absentStudents = absentees.filter(emp => {
-        const empCode = emp.id || emp.empCode || '';
+        const empCode = String(emp.id || emp.empCode || '').trim();
         return getEmployeeType(empCode) === 'student';
     });
     
     const absentTeachers = absentees.filter(emp => {
-        const empCode = emp.id || emp.empCode || '';
+        const empCode = String(emp.id || emp.empCode || '').trim();
         return getEmployeeType(empCode) === 'teacher';
     });
     
