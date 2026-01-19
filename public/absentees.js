@@ -23,6 +23,9 @@ async function loadEmployeeNames() {
         if (response.ok) {
             const data = await response.json();
             employeeNameMap = data.employeeNames || {};
+            console.log('✓ Loaded employee names:', Object.keys(employeeNameMap).length, 'entries');
+        } else {
+            console.error('Failed to load employee-names.json:', response.status);
         }
     } catch (error) {
         console.error('Error loading employee names:', error);
@@ -84,6 +87,10 @@ function createCompleteEmployeeList() {
             type: type
         });
     });
+    
+    console.log('Created complete employee list:', allEmployees.length, 'employees');
+    console.log('Students:', allEmployees.filter(e => e.type === 'student').length);
+    console.log('Teachers:', allEmployees.filter(e => e.type === 'teacher').length);
     
     return allEmployees;
 }
