@@ -1,4 +1,9 @@
 // Directory page functionality
+// Immediate test - this should run as soon as the file loads
+console.log('📄 directory.js file loaded!');
+console.log('📄 Current URL:', window.location.href);
+console.log('📄 Document ready state:', document.readyState);
+console.log('📄 Window loaded:', window.loaded);
 
 let employeeTypeMap = {};
 let employeeNameMap = {};
@@ -357,7 +362,30 @@ function setupEventHandlers() {
 }
 
 // Initialize on page load
+console.log('📄 directory.js: Setting up DOMContentLoaded listener...');
+
 document.addEventListener('DOMContentLoaded', function() {
-    initDirectory();
-    setupEventHandlers();
+    console.log('📄 directory.js: DOMContentLoaded fired!');
+    console.log('📄 directory.js: Calling initDirectory()...');
+    try {
+        initDirectory();
+        setupEventHandlers();
+        console.log('📄 directory.js: Initialization complete!');
+    } catch (error) {
+        console.error('✗ directory.js: Error during initialization:', error);
+        console.error('  Stack:', error.stack);
+    }
 });
+
+// Also try immediate execution if DOM is already loaded
+if (document.readyState === 'loading') {
+    console.log('📄 directory.js: DOM is still loading, waiting for DOMContentLoaded...');
+} else {
+    console.log('📄 directory.js: DOM already loaded, calling initDirectory() immediately...');
+    try {
+        initDirectory();
+        setupEventHandlers();
+    } catch (error) {
+        console.error('✗ directory.js: Error during immediate initialization:', error);
+    }
+}
