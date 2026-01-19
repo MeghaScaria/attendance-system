@@ -184,7 +184,7 @@ function createCompleteEmployeeList(attendanceRecords = []) {
 }
 
 // Fetch attendance data from API
-async function fetchAttendanceData(dateFilter = 'today') {
+async function fetchAttendanceData(dateFilter = 'today', customStartDate = null, customEndDate = null) {
     if (!USE_API) {
         return mockChildrenData;
     }
@@ -212,6 +212,18 @@ async function fetchAttendanceData(dateFilter = 'today') {
                 startDate = new Date(today.getFullYear(), today.getMonth(), 1);
                 endDate = today.toISOString().split('T')[0];
                 result = await ApiService.getAttendanceRange(startDate.toISOString().split('T')[0], endDate);
+                break;
+            case 'custom':
+                if (customStartDate && customEndDate) {
+                    startDate = customStartDate;
+                    endDate = customEndDate;
+                    result = await ApiService.getAttendanceRange(startDate, endDate);
+                } else {
+                    // Fallback to today if custom dates not provided
+                    startDate = today.toISOString().split('T')[0];
+                    endDate = startDate;
+                    result = await ApiService.getTodayAttendance();
+                }
                 break;
             default:
                 result = await ApiService.getTodayAttendance();
@@ -398,8 +410,18 @@ async function initAttendance() {
     const dateSelect = document.getElementById('dateSelect');
     const dateFilter = dateSelect ? dateSelect.value : 'today';
     
+    // Get custom dates if custom range is selected
+    let customStartDate = null;
+    let customEndDate = null;
+    if (dateFilter === 'custom') {
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        customStartDate = startDateInput ? startDateInput.value : null;
+        customEndDate = endDateInput ? endDateInput.value : null;
+    }
+    
     // Fetch data
-    childrenData = await fetchAttendanceData(dateFilter);
+    childrenData = await fetchAttendanceData(dateFilter, customStartDate, customEndDate);
     filteredData = [...childrenData];
     
     // Apply filters
@@ -439,10 +461,377 @@ function setupEventHandlers() {
     const dateSelect = document.getElementById('dateSelect');
     if (dateSelect) {
         dateSelect.addEventListener('change', async (e) => {
+            const customDateRange = document.getElementById('customDateRange');
+            if (e.target.value === 'custom') {
+                // Show custom date range inputs
+                if (customDateRange) {
+                    customDateRange.style.display = 'flex';
+                    // Set default dates (last 7 days)
+                    const endDate = new Date();
+                    const startDate = new Date();
+                    startDate.setDate(endDate.getDate() - 7);
+                    const startDateInput = document.getElementById('startDate');
+                    const endDateInput = document.getElementById('endDate');
+                    if (startDateInput) startDateInput.value = startDate.toISOString().split('T')[0];
+                    if (endDateInput) endDateInput.value = endDate.toISOString().split('T')[0];
+                }
+            } else {
+                // Hide custom date range inputs
+                if (customDateRange) {
+                    customDateRange.style.display = 'none';
+                }
+            }
             // Reload data for selected date range
             await initAttendance();
         });
     }
+    
+    // Custom date range handlers
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    if (startDateInput) {
+        startDateInput.addEventListener('change', async () => {
+            if (dateSelect && dateSelect.value === 'custom') {
+                await initAttendance();
+            }
+        });
+    }
+    if (endDateInput) {
+        endDateInput.addEventListener('change', async () => {
+            if (dateSelect && dateSelect.value === 'custom') {
+                await initAttendance();
+            }
+        });
+    }
+    
+    // Export/Print PDF button handler
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', () => {
+            exportToPDF();
+        });
+    }
+}
+
+// Export attendance data to PDF
+function exportToPDF() {
+    // Get current date range info
+    const dateSelect = document.getElementById('dateSelect');
+    const dateFilter = dateSelect ? dateSelect.value : 'today';
+    let dateRangeText = '';
+    
+    const today = new Date();
+    switch(dateFilter) {
+        case 'today':
+            dateRangeText = `Date: ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+            break;
+        case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(today.getDate() - 7);
+            dateRangeText = `Date Range: ${weekAgo.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} to ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+            break;
+        case 'month':
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            dateRangeText = `Month: ${firstDay.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`;
+            break;
+        case 'custom':
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            if (startDateInput && endDateInput && startDateInput.value && endDateInput.value) {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+                dateRangeText = `Date Range: ${startDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} to ${endDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+            } else {
+                dateRangeText = `Date: ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+            }
+            break;
+    }
+    
+    // Create print-friendly HTML
+    const printWindow = window.open('', '_blank');
+    const printContent = generatePrintContent(filteredData, dateRangeText);
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    printWindow.onload = function() {
+        setTimeout(() => {
+            printWindow.print();
+        }, 250);
+    };
+}
+
+// Generate print-friendly HTML content
+function generatePrintContent(data, dateRangeText) {
+    // Separate students and teachers
+    const students = data.filter(record => {
+        const empCode = normalizeEmpCode(record.id || record.empCode || '');
+        return getEmployeeType(empCode) === 'student';
+    });
+    
+    const teachers = data.filter(record => {
+        const empCode = normalizeEmpCode(record.id || record.empCode || '');
+        return getEmployeeType(empCode) === 'teacher';
+    });
+    
+    // Sort by name
+    students.sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
+    teachers.sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
+    // Count statistics
+    const totalPresent = data.filter(r => (r.status || '').toLowerCase() === 'present' || (r.status || '').toLowerCase() === 'p').length;
+    const totalAbsent = data.filter(r => (r.status || '').toLowerCase() === 'absent' || (r.status || '').toLowerCase() === 'a').length;
+    
+    let html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Report</title>
+    <style>
+        @media print {
+            @page {
+                margin: 1cm;
+                size: A4;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: #1f2937;
+        }
+        .header p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f3f4f6;
+            border-radius: 8px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-item strong {
+            display: block;
+            font-size: 24px;
+            color: #1f2937;
+        }
+        .summary-item span {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .section {
+            margin: 30px 0;
+            page-break-inside: avoid;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #d1d5db;
+            color: #1f2937;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f9fafb;
+            font-weight: bold;
+            color: #374151;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        td {
+            font-size: 13px;
+        }
+        .status-present {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .status-absent {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Attendance Report</h1>
+        <p>${dateRangeText}</p>
+        <p>Generated on: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+    </div>
+    
+    <div class="summary">
+        <div class="summary-item">
+            <strong>${data.length}</strong>
+            <span>Total</span>
+        </div>
+        <div class="summary-item">
+            <strong style="color: #10b981;">${totalPresent}</strong>
+            <span>Present</span>
+        </div>
+        <div class="summary-item">
+            <strong style="color: #ef4444;">${totalAbsent}</strong>
+            <span>Absent</span>
+        </div>
+        <div class="summary-item">
+            <strong>${students.length}</strong>
+            <span>Students</span>
+        </div>
+        <div class="summary-item">
+            <strong>${teachers.length}</strong>
+            <span>Teachers</span>
+        </div>
+    </div>
+`;
+    
+    // Students section
+    if (students.length > 0) {
+        html += `
+    <div class="section">
+        <div class="section-title">Students (${students.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+`;
+        students.forEach(record => {
+            const empCode = normalizeEmpCode(record.id || record.empCode || '');
+            const name = getEmployeeName(empCode, record.name);
+            const status = (record.status || '').toLowerCase();
+            const statusClass = (status === 'present' || status === 'p') ? 'status-present' : 'status-absent';
+            const statusText = (status === 'present' || status === 'p') ? 'Present' : 'Absent';
+            
+            html += `
+                <tr>
+                    <td>${empCode}</td>
+                    <td>${name}</td>
+                    <td>${record.date || 'N/A'}</td>
+                    <td>${record.checkIn || '--:--'}</td>
+                    <td>${record.checkOut || '--:--'}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                </tr>
+`;
+        });
+        html += `
+            </tbody>
+        </table>
+    </div>
+`;
+    }
+    
+    // Teachers section
+    if (teachers.length > 0) {
+        html += `
+    <div class="section">
+        <div class="section-title">Teachers (${teachers.length})</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+`;
+        teachers.forEach(record => {
+            const empCode = normalizeEmpCode(record.id || record.empCode || '');
+            const name = getEmployeeName(empCode, record.name);
+            const status = (record.status || '').toLowerCase();
+            const statusClass = (status === 'present' || status === 'p') ? 'status-present' : 'status-absent';
+            const statusText = (status === 'present' || status === 'p') ? 'Present' : 'Absent';
+            
+            html += `
+                <tr>
+                    <td>${empCode}</td>
+                    <td>${name}</td>
+                    <td>${record.date || 'N/A'}</td>
+                    <td>${record.checkIn || '--:--'}</td>
+                    <td>${record.checkOut || '--:--'}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                </tr>
+`;
+        });
+        html += `
+            </tbody>
+        </table>
+    </div>
+`;
+    }
+    
+    html += `
+    <div class="footer">
+        <p>This is a computer-generated report. For official records, please verify with the attendance system.</p>
+    </div>
+</body>
+</html>
+`;
+    
+    return html;
 }
 
 // Initialize on page load
