@@ -525,25 +525,32 @@ function getEmployeeType(empCode) {
 }
 
 // Get dashboard statistics (protected route)
+// SIMPLIFIED: Just checks if someone has punched in (check-in time exists) = Present
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     try {
         const today = new Date();
+        const todayStr = formatDate(today);
+        
+        console.log('📊 Dashboard stats requested for:', todayStr);
 
-        // Get today's attendance
+        // Get today's attendance from API
         const todayResult = await makeEtimeRequest({
             Empcode: 'ALL',
-            FromDate: formatDate(today),
-            ToDate: formatDate(today)
+            FromDate: todayStr,
+            ToDate: todayStr
         });
 
         if (!todayResult.success) {
+            console.error('✗ Failed to fetch today\'s attendance:', todayResult.error);
             return res.status(todayResult.status || 500).json({
                 success: false,
                 error: todayResult.error
             });
         }
 
-        // Get all employees from employee-names.json (complete list)
+        console.log('✓ Today\'s attendance records:', todayResult.data?.length || 0);
+
+        // Get all employees from employee-names.json (source of truth)
         const namesPath = path.join(__dirname, '..', 'data', 'employee-names.json');
         let allEmployeeCodes = [];
 
@@ -556,39 +563,38 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
                 console.warn('⚠ employee-names.json not found at:', namesPath);
             }
         } catch (error) {
-            console.error('Error loading employee-names.json:', error);
+            console.error('✗ Error loading employee-names.json:', error);
         }
 
-        // If file loading failed, use hardcoded values (from known data)
+        // Fallback if file loading failed
         if (allEmployeeCodes.length === 0) {
             console.log('⚠ Using fallback employee codes');
-            // All known employee codes from employee-names.json (18 students + 7 staff = 25 total)
             allEmployeeCodes = ['101', '102', '103', '104', '105', '106', '107', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018'];
         }
 
-        // Separate students and staff
+        // Separate students and staff from our master list
         const students = allEmployeeCodes.filter(code => getEmployeeType(code) === 'student');
         const staff = allEmployeeCodes.filter(code => getEmployeeType(code) === 'teacher');
         const totalStudents = students.length;
         const totalStaff = staff.length;
-        const totalChildren = totalStudents; // For backward compatibility
 
-        console.log(`📊 Dashboard stats: ${totalStudents} students, ${totalStaff} staff`);
+        console.log(`📋 Master list: ${totalStudents} students, ${totalStaff} staff`);
 
-        // Get unique employees who punched today (with check-in time = Present)
-        // Fix: Use check-in time to determine present status, not API Status field
-        const todayPresentEmployees = new Set();
+        // SIMPLE LOGIC: If they have a check-in time, they are Present
+        // Count who punched in today
         const todayPresentStudents = new Set();
         const todayPresentStaff = new Set();
+        const allPresentToday = new Set();
 
         (todayResult.data || []).forEach(record => {
             const empCode = normalizeEmpCode(record.Empcode);
-            // If they have a check-in time, they are present
-            const inTime = record.INTime && record.INTime !== '--:--' && record.INTime !== null;
+            const inTime = record.INTime && record.INTime !== '--:--' && record.INTime !== null && record.INTime !== '';
 
+            // Simple check: Has check-in time = Present
             if (empCode && inTime) {
-                todayPresentEmployees.add(empCode); // Now always string
+                allPresentToday.add(empCode);
                 const type = getEmployeeType(empCode);
+                
                 if (type === 'student') {
                     todayPresentStudents.add(empCode);
                 } else if (type === 'teacher') {
@@ -597,43 +603,46 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
             }
         });
 
-        const presentToday = todayPresentEmployees.size;
+        // Calculate counts
         const presentStudents = todayPresentStudents.size;
         const presentStaff = todayPresentStaff.size;
+        const presentToday = allPresentToday.size;
         const absentStudents = totalStudents - presentStudents;
         const absentStaff = totalStaff - presentStaff;
-        const absentToday = totalStudents + totalStaff - presentToday;
+        const absentToday = absentStudents + absentStaff;
 
-        // Calculate monthly attendance rate for students
+        console.log(`✅ Today's counts:`);
+        console.log(`   Students: ${presentStudents} present, ${absentStudents} absent (out of ${totalStudents} total)`);
+        console.log(`   Staff: ${presentStaff} present, ${absentStaff} absent (out of ${totalStaff} total)`);
+        console.log(`   Total present today: ${presentToday}`);
+
+        // Calculate monthly attendance rate (simplified - just for students)
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const monthResult = await makeEtimeRequest({
             Empcode: 'ALL',
             FromDate: formatDate(firstDayOfMonth),
-            ToDate: formatDate(today)
+            ToDate: todayStr
         });
 
         let attendanceRate = 0;
-        if (monthResult.success && monthResult.data) {
-            // Count unique students who attended this month (with check-in time)
+        if (monthResult.success && monthResult.data && totalStudents > 0) {
+            // Count unique students who attended at least once this month
             const monthStudents = new Set();
             monthResult.data.forEach(record => {
                 const empCode = normalizeEmpCode(record.Empcode);
-                const inTime = record.INTime && record.INTime !== '--:--' && record.INTime !== null;
+                const inTime = record.INTime && record.INTime !== '--:--' && record.INTime !== null && record.INTime !== '';
                 if (empCode && inTime && getEmployeeType(empCode) === 'student') {
-                    monthStudents.add(empCode); // Now always string
+                    monthStudents.add(empCode);
                 }
             });
-
-            // Calculate rate (students who attended at least once / total students)
-            attendanceRate = totalStudents > 0
-                ? Math.round((monthStudents.size / totalStudents) * 100)
-                : 0;
+            attendanceRate = Math.round((monthStudents.size / totalStudents) * 100);
+            console.log(`📈 Monthly attendance rate: ${attendanceRate}% (${monthStudents.size}/${totalStudents} students)`);
         }
 
-        res.json({
+        const response = {
             success: true,
             data: {
-                totalChildren, // For backward compatibility
+                totalChildren: totalStudents, // For backward compatibility
                 totalStudents,
                 totalStaff,
                 presentToday,
@@ -644,9 +653,13 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
                 absentStaff,
                 attendanceRate
             }
-        });
+        };
+
+        console.log('📤 Sending dashboard stats:', JSON.stringify(response.data, null, 2));
+        res.json(response);
     } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        console.error('✗ Error fetching dashboard stats:', error);
+        console.error('  Stack:', error.stack);
         res.status(500).json({ success: false, error: error.message });
     }
 });
