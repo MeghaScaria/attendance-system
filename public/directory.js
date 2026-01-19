@@ -11,9 +11,12 @@ async function loadEmployeeTypes() {
         if (response.ok) {
             const data = await response.json();
             employeeTypeMap = data.employeeTypes || {};
+            console.log('✓ Loaded employee types:', Object.keys(employeeTypeMap).length, 'entries');
+        } else {
+            console.error('✗ Failed to load employee-types.json:', response.status, response.statusText);
         }
     } catch (error) {
-        console.error('Error loading employee types:', error);
+        console.error('✗ Error loading employee types:', error);
     }
 }
 
@@ -24,9 +27,13 @@ async function loadEmployeeNames() {
         if (response.ok) {
             const data = await response.json();
             employeeNameMap = data.employeeNames || {};
+            console.log('✓ Loaded employee names:', Object.keys(employeeNameMap).length, 'entries');
+            console.log('  Employee codes:', Object.keys(employeeNameMap).join(', '));
+        } else {
+            console.error('✗ Failed to load employee-names.json:', response.status, response.statusText);
         }
     } catch (error) {
-        console.error('Error loading employee names:', error);
+        console.error('✗ Error loading employee names:', error);
     }
 }
 
@@ -52,22 +59,40 @@ function getEmployeeName(empCode, apiName) {
 function createCompleteEmployeeList() {
     const allEmployees = [];
     
+    console.log('📋 Creating employee list from employeeNameMap...');
+    console.log('  employeeNameMap keys:', Object.keys(employeeNameMap));
+    console.log('  employeeTypeMap keys:', Object.keys(employeeTypeMap));
+    
     // Get all employee codes from employeeNameMap
     Object.keys(employeeNameMap).forEach(empCode => {
         const name = employeeNameMap[empCode];
-        const type = getEmployeeType(empCode);
+        const normalizedCode = normalizeEmpCode(empCode);
+        const type = getEmployeeType(normalizedCode);
+        
+        console.log(`  Processing: ${empCode} -> ${name} (type: ${type})`);
         
         allEmployees.push({
-            id: empCode,
-            empCode: empCode,
+            id: normalizedCode,
+            empCode: normalizedCode,
             name: name,
             type: type
         });
     });
     
-    console.log('Created complete employee list:', allEmployees.length, 'employees');
-    console.log('Students:', allEmployees.filter(e => e.type === 'student').length);
-    console.log('Teachers:', allEmployees.filter(e => e.type === 'teacher').length);
+    const studentCount = allEmployees.filter(e => e.type === 'student').length;
+    const teacherCount = allEmployees.filter(e => e.type === 'teacher').length;
+    const unknownCount = allEmployees.filter(e => e.type === 'unknown').length;
+    
+    console.log('✅ Created complete employee list:', allEmployees.length, 'employees');
+    console.log('  Students:', studentCount);
+    console.log('  Teachers:', teacherCount);
+    console.log('  Unknown:', unknownCount);
+    
+    if (unknownCount > 0) {
+        console.warn('⚠️  Some employees have unknown type. Check employee-types.json');
+        const unknown = allEmployees.filter(e => e.type === 'unknown');
+        console.warn('  Unknown employees:', unknown.map(e => `${e.id} (${e.name})`).join(', '));
+    }
     
     return allEmployees;
 }
@@ -101,18 +126,30 @@ function filterEmployees(employees, searchTerm, typeFilter) {
 function renderDirectory(employees) {
     const gridContainer = document.getElementById('directoryGrid');
     
-    if (!gridContainer) return;
+    if (!gridContainer) {
+        console.error('✗ directoryGrid element not found!');
+        return;
+    }
+    
+    console.log('🎨 Rendering directory with', employees.length, 'employees');
     
     // Separate students and teachers
     const students = employees.filter(emp => {
         const empCode = normalizeEmpCode(emp.id || emp.empCode || '');
-        return getEmployeeType(empCode) === 'student';
+        const type = getEmployeeType(empCode);
+        return type === 'student';
     });
     
     const teachers = employees.filter(emp => {
         const empCode = normalizeEmpCode(emp.id || emp.empCode || '');
-        return getEmployeeType(empCode) === 'teacher';
+        const type = getEmployeeType(empCode);
+        return type === 'teacher';
     });
+    
+    console.log('  Students to render:', students.length);
+    console.log('  Teachers to render:', teachers.length);
+    console.log('  Student names:', students.map(s => s.name).join(', '));
+    console.log('  Teacher names:', teachers.map(t => t.name).join(', '));
     
     // Sort by name
     students.sort((a, b) => {
@@ -223,24 +260,50 @@ function renderDirectory(employees) {
         `;
     }
     
+    console.log('📝 Setting innerHTML, HTML length:', html.length);
+    console.log('  Number of student cards:', (html.match(/directory-card/g) || []).length);
+    
     gridContainer.innerHTML = html;
+    
+    // Verify rendering
+    const renderedCards = gridContainer.querySelectorAll('.directory-card');
+    console.log('✅ Rendered', renderedCards.length, 'cards in DOM');
+    
+    if (renderedCards.length !== students.length + teachers.length) {
+        console.warn('⚠️  Mismatch! Expected', students.length + teachers.length, 'cards but found', renderedCards.length);
+    }
 }
 
 // Initialize directory page
 async function initDirectory() {
+    console.log('🚀 Initializing directory page...');
+    
     // Load employee types and names FIRST (must complete before creating employee list)
+    console.log('📥 Loading employee data files...');
     await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
     
     // Verify data loaded
-    if (Object.keys(employeeNameMap).length === 0) {
-        console.error('Failed to load employee names. Directory will be empty.');
+    const nameCount = Object.keys(employeeNameMap).length;
+    const typeCount = Object.keys(employeeTypeMap).length;
+    
+    console.log('📊 Data loaded summary:');
+    console.log('  Employee names:', nameCount);
+    console.log('  Employee types:', typeCount);
+    
+    if (nameCount === 0) {
+        console.error('✗ Failed to load employee names. Directory will be empty.');
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('directoryGrid').innerHTML = `
             <div class="error-state">
                 <p style="color: var(--danger-color);">Error: Could not load employee data.</p>
+                <p style="color: var(--gray-600); font-size: 14px; margin-top: 8px;">Check browser console for details.</p>
             </div>
         `;
         return;
+    }
+    
+    if (typeCount === 0) {
+        console.warn('⚠️  Employee types not loaded. All employees will show as "unknown".');
     }
     
     // Show loading state
@@ -249,16 +312,23 @@ async function initDirectory() {
     try {
         // Create complete employee list from employee-names.json (source of truth)
         allEmployees = createCompleteEmployeeList();
+        
+        if (allEmployees.length === 0) {
+            throw new Error('No employees found in employee-names.json');
+        }
+        
         document.getElementById('loadingState').style.display = 'none';
         
         // Render initial directory
         renderDirectory(allEmployees);
     } catch (error) {
-        console.error('Error initializing directory:', error);
+        console.error('✗ Error initializing directory:', error);
+        console.error('  Stack:', error.stack);
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('directoryGrid').innerHTML = `
             <div class="error-state">
                 <p style="color: var(--danger-color);">Error loading directory: ${error.message}</p>
+                <p style="color: var(--gray-600); font-size: 14px; margin-top: 8px;">Check browser console for details.</p>
             </div>
         `;
     }

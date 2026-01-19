@@ -880,9 +880,12 @@ body {
 }
 
 .directory-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 24px;
+    /* Changed from grid to block to allow sections to flow naturally */
+    display: block;
+    width: 100%;
+    /* Ensure all content is visible */
+    min-height: auto;
+    overflow: visible;
 }
 
 .directory-card {
@@ -945,6 +948,9 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
     margin-top: 16px;
+    /* Ensure all cards are visible - no height restrictions */
+    min-height: auto;
+    overflow: visible;
 }
 
 .empty-state-small {
