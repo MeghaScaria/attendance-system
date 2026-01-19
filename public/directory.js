@@ -1,9 +1,12 @@
 // Directory page functionality
 // Immediate test - this should run as soon as the file loads
-console.log('📄 directory.js file loaded!');
-console.log('📄 Current URL:', window.location.href);
-console.log('📄 Document ready state:', document.readyState);
-console.log('📄 Window loaded:', window.loaded);
+(function() {
+    console.log('========================================');
+    console.log('📄 directory.js file loaded!');
+    console.log('📄 Current URL:', window.location.href);
+    console.log('📄 Document ready state:', document.readyState);
+    console.log('========================================');
+})();
 
 let employeeTypeMap = {};
 let employeeNameMap = {};
@@ -11,34 +14,51 @@ let allEmployees = [];
 
 // Load employee types mapping
 async function loadEmployeeTypes() {
+    console.log('🔄 loadEmployeeTypes() called');
     try {
+        console.log('  Fetching /data/employee-types.json...');
         const response = await fetch('/data/employee-types.json');
+        console.log('  Response status:', response.status, response.statusText);
         if (response.ok) {
             const data = await response.json();
             employeeTypeMap = data.employeeTypes || {};
-            console.log('✓ Loaded employee types:', Object.keys(employeeTypeMap).length, 'entries');
+            const count = Object.keys(employeeTypeMap).length;
+            console.log('✓ Loaded employee types:', count, 'entries');
+            if (count === 0) {
+                console.warn('⚠️  WARNING: employeeTypeMap is empty!');
+            }
         } else {
             console.error('✗ Failed to load employee-types.json:', response.status, response.statusText);
         }
     } catch (error) {
         console.error('✗ Error loading employee types:', error);
+        console.error('  Error details:', error.message, error.stack);
     }
 }
 
 // Load employee names mapping
 async function loadEmployeeNames() {
+    console.log('🔄 loadEmployeeNames() called');
     try {
+        console.log('  Fetching /data/employee-names.json...');
         const response = await fetch('/data/employee-names.json');
+        console.log('  Response status:', response.status, response.statusText);
         if (response.ok) {
             const data = await response.json();
             employeeNameMap = data.employeeNames || {};
-            console.log('✓ Loaded employee names:', Object.keys(employeeNameMap).length, 'entries');
-            console.log('  Employee codes:', Object.keys(employeeNameMap).join(', '));
+            const count = Object.keys(employeeNameMap).length;
+            console.log('✓ Loaded employee names:', count, 'entries');
+            if (count > 0) {
+                console.log('  Employee codes:', Object.keys(employeeNameMap).slice(0, 10).join(', '), count > 10 ? '...' : '');
+            } else {
+                console.warn('⚠️  WARNING: employeeNameMap is empty!');
+            }
         } else {
             console.error('✗ Failed to load employee-names.json:', response.status, response.statusText);
         }
     } catch (error) {
         console.error('✗ Error loading employee names:', error);
+        console.error('  Error details:', error.message, error.stack);
     }
 }
 
