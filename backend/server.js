@@ -48,7 +48,7 @@ async function initializeUsers() {
         name: 'Staff Member',
         role: 'staff'
     };
-    
+
     console.log('✓ User accounts initialized');
 }
 
@@ -137,16 +137,16 @@ function transformAttendanceData(etimeData, filterToday = false) {
             // Skip invalid records (normalize Empcode for consistent checking)
             const empCode = normalizeEmpCode(record.Empcode);
             if (!empCode || !record.DateString) return false;
-            
+
             // If filtering for today, skip other dates
             if (filterToday && record.DateString !== todayStr) return false;
-            
+
             return true;
         })
         .map(record => {
             const inTime = record.INTime && record.INTime !== '--:--' ? record.INTime : null;
             const outTime = record.OUTTime && record.OUTTime !== '--:--' ? record.OUTTime : null;
-            
+
             // Fix: If someone has a check-in time, they are Present
             // Only mark as Absent if there's no check-in time AND status is 'A'
             let status = 'Absent';
@@ -296,42 +296,42 @@ app.get('/api/attendance/today', authenticateToken, async (req, res) => {
 app.get('/api/attendance/range', authenticateToken, async (req, res) => {
     try {
         const { start, end } = req.query;
-        
+
         if (!start || !end) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Start and end dates are required (format: YYYY-MM-DD)' 
+            return res.status(400).json({
+                success: false,
+                error: 'Start and end dates are required (format: YYYY-MM-DD)'
             });
         }
-        
+
         // Parse dates and format for E-Time API
         const startDate = new Date(start);
         const endDate = new Date(end);
-        
+
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Invalid date format. Use YYYY-MM-DD' 
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid date format. Use YYYY-MM-DD'
             });
         }
-        
+
         // Call E-Time API with correct parameters
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
             FromDate: formatDate(startDate),
             ToDate: formatDate(endDate)
         });
-        
+
         if (!result.success) {
-            return res.status(result.status || 500).json({ 
-                success: false, 
-                error: result.error 
+            return res.status(result.status || 500).json({
+                success: false,
+                error: result.error
             });
         }
-        
+
         // Transform E-Time punch data to frontend format
         const transformedData = transformAttendanceData(result.data);
-        
+
         res.json({ success: true, data: transformedData });
     } catch (error) {
         console.error('Error fetching attendance range:', error);
@@ -345,24 +345,24 @@ app.get('/api/attendance/all', authenticateToken, async (req, res) => {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - 30); // Last 30 days
-        
+
         // Call E-Time API with correct parameters
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
             FromDate: formatDate(startDate),
             ToDate: formatDate(endDate)
         });
-        
+
         if (!result.success) {
-            return res.status(result.status || 500).json({ 
-                success: false, 
-                error: result.error 
+            return res.status(result.status || 500).json({
+                success: false,
+                error: result.error
             });
         }
-        
+
         // Transform E-Time punch data to frontend format
         const transformedData = transformAttendanceData(result.data);
-        
+
         res.json({ success: true, data: transformedData });
     } catch (error) {
         console.error('Error fetching all attendance:', error);
@@ -375,7 +375,7 @@ app.get('/api/attendance/employee/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params; // Employee code
         let startDate, endDate;
-        
+
         // Use query params or default to last 30 days
         if (req.query.start && req.query.end) {
             startDate = new Date(req.query.start);
@@ -385,31 +385,31 @@ app.get('/api/attendance/employee/:id', authenticateToken, async (req, res) => {
             startDate = new Date();
             startDate.setDate(endDate.getDate() - 30);
         }
-        
+
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Invalid date format. Use YYYY-MM-DD' 
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid date format. Use YYYY-MM-DD'
             });
         }
-        
+
         // Call E-Time API with employee code
         const result = await makeEtimeRequest({
             Empcode: id, // Use specific employee code
             FromDate: formatDate(startDate),
             ToDate: formatDate(endDate)
         });
-        
+
         if (!result.success) {
-            return res.status(result.status || 500).json({ 
-                success: false, 
-                error: result.error 
+            return res.status(result.status || 500).json({
+                success: false,
+                error: result.error
             });
         }
-        
+
         // Transform E-Time punch data to frontend format
         const transformedData = transformAttendanceData(result.data);
-        
+
         res.json({ success: true, data: transformedData });
     } catch (error) {
         console.error('Error fetching employee attendance:', error);
@@ -425,27 +425,27 @@ app.get('/api/children', authenticateToken, async (req, res) => {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - 30);
-        
+
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
             FromDate: formatDate(startDate),
             ToDate: formatDate(endDate)
         });
-        
+
         if (!result.success) {
-            return res.status(result.status || 500).json({ 
-                success: false, 
-                error: result.error 
+            return res.status(result.status || 500).json({
+                success: false,
+                error: result.error
             });
         }
-        
+
         // Extract unique employees from InOutPunchData
         const employeeMap = new Map();
-        
+
         (result.data || []).forEach(record => {
             const empCode = normalizeEmpCode(record.Empcode);
             const name = record.Name || 'Unknown';
-            
+
             if (empCode && !employeeMap.has(empCode)) {
                 employeeMap.set(empCode, {
                     id: empCode, // Always string
@@ -458,9 +458,9 @@ app.get('/api/children', authenticateToken, async (req, res) => {
                 });
             }
         });
-        
+
         const children = Array.from(employeeMap.values());
-        
+
         res.json({ success: true, data: children });
     } catch (error) {
         console.error('Error fetching children list:', error);
@@ -528,25 +528,25 @@ function getEmployeeType(empCode) {
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     try {
         const today = new Date();
-        
+
         // Get today's attendance
         const todayResult = await makeEtimeRequest({
             Empcode: 'ALL',
             FromDate: formatDate(today),
             ToDate: formatDate(today)
         });
-        
+
         if (!todayResult.success) {
-            return res.status(todayResult.status || 500).json({ 
-                success: false, 
-                error: todayResult.error 
+            return res.status(todayResult.status || 500).json({
+                success: false,
+                error: todayResult.error
             });
         }
-        
+
         // Get all employees from employee-names.json (complete list)
         const namesPath = path.join(__dirname, '..', 'data', 'employee-names.json');
         let allEmployeeCodes = [];
-        
+
         try {
             if (fs.existsSync(namesPath)) {
                 const namesData = JSON.parse(fs.readFileSync(namesPath, 'utf8'));
@@ -558,34 +558,34 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         } catch (error) {
             console.error('Error loading employee-names.json:', error);
         }
-        
+
         // If file loading failed, use hardcoded values (from known data)
         if (allEmployeeCodes.length === 0) {
             console.log('⚠ Using fallback employee codes');
-            // All known employee codes from employee-names.json
-            allEmployeeCodes = ['101', '102', '103', '104', '105', '106', '107', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019'];
+            // All known employee codes from employee-names.json (18 students + 7 staff = 25 total)
+            allEmployeeCodes = ['101', '102', '103', '104', '105', '106', '107', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018'];
         }
-        
+
         // Separate students and staff
         const students = allEmployeeCodes.filter(code => getEmployeeType(code) === 'student');
         const staff = allEmployeeCodes.filter(code => getEmployeeType(code) === 'teacher');
         const totalStudents = students.length;
         const totalStaff = staff.length;
         const totalChildren = totalStudents; // For backward compatibility
-        
+
         console.log(`📊 Dashboard stats: ${totalStudents} students, ${totalStaff} staff`);
-        
+
         // Get unique employees who punched today (with check-in time = Present)
         // Fix: Use check-in time to determine present status, not API Status field
         const todayPresentEmployees = new Set();
         const todayPresentStudents = new Set();
         const todayPresentStaff = new Set();
-        
+
         (todayResult.data || []).forEach(record => {
             const empCode = normalizeEmpCode(record.Empcode);
             // If they have a check-in time, they are present
             const inTime = record.INTime && record.INTime !== '--:--' && record.INTime !== null;
-            
+
             if (empCode && inTime) {
                 todayPresentEmployees.add(empCode); // Now always string
                 const type = getEmployeeType(empCode);
@@ -596,14 +596,14 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
                 }
             }
         });
-        
+
         const presentToday = todayPresentEmployees.size;
         const presentStudents = todayPresentStudents.size;
         const presentStaff = todayPresentStaff.size;
         const absentStudents = totalStudents - presentStudents;
         const absentStaff = totalStaff - presentStaff;
         const absentToday = totalStudents + totalStaff - presentToday;
-        
+
         // Calculate monthly attendance rate for students
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const monthResult = await makeEtimeRequest({
@@ -611,7 +611,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
             FromDate: formatDate(firstDayOfMonth),
             ToDate: formatDate(today)
         });
-        
+
         let attendanceRate = 0;
         if (monthResult.success && monthResult.data) {
             // Count unique students who attended this month (with check-in time)
@@ -623,13 +623,13 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
                     monthStudents.add(empCode); // Now always string
                 }
             });
-            
+
             // Calculate rate (students who attended at least once / total students)
-            attendanceRate = totalStudents > 0 
+            attendanceRate = totalStudents > 0
                 ? Math.round((monthStudents.size / totalStudents) * 100)
                 : 0;
         }
-        
+
         res.json({
             success: true,
             data: {
@@ -656,22 +656,22 @@ app.get('/api/attendance/recent', authenticateToken, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
         const today = new Date();
-        
+
         const result = await makeEtimeRequest({
             Empcode: 'ALL',
             FromDate: formatDate(today),
             ToDate: formatDate(today)
         });
-        
+
         if (!result.success) {
-            return res.status(result.status || 500).json({ 
-                success: false, 
-                error: result.error 
+            return res.status(result.status || 500).json({
+                success: false,
+                error: result.error
             });
         }
-        
+
         const punchData = result.data || [];
-        
+
         // Get check-ins for employees with valid INTime (Present status)
         const checkIns = punchData
             .filter(record => {
@@ -699,7 +699,7 @@ app.get('/api/attendance/recent', authenticateToken, async (req, res) => {
                 status: item.status,
                 avatar: item.avatar
             }));
-        
+
         res.json({ success: true, data: checkIns });
     } catch (error) {
         console.error('Error fetching recent activity:', error);
