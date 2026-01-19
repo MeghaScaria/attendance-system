@@ -94,38 +94,44 @@ async function fetchAbsentees(date) {
         // Format date as YYYY-MM-DD
         const dateStr = formatDateForInput(date);
         
+        // Get ALL employees from employee-names.json FIRST (complete list - source of truth)
+        const allEmployees = createCompleteEmployeeList();
+        console.log('Total employees from names file:', allEmployees.length);
+        
         // Fetch attendance for the selected date
         const result = await ApiService.getAttendanceRange(dateStr, dateStr);
         
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to fetch attendance data');
-        }
-        
-        // Get ALL employees from employee-names.json (complete list)
-        const allEmployees = createCompleteEmployeeList();
-        const attendanceRecords = result.data || [];
-        
         // Create a map of employees who were present (have check-in time)
         const presentEmployees = new Set();
-        attendanceRecords.forEach(record => {
-            const empCode = record.id || record.empCode || '';
-            const checkIn = record.checkIn;
-            // If they have a check-in time, they are present
-            if (empCode && checkIn && checkIn !== '--:--' && checkIn !== null) {
-                presentEmployees.add(empCode);
-            }
-        });
         
-        // Find absentees (employees not in present list)
+        if (result.success && result.data) {
+            const attendanceRecords = result.data || [];
+            attendanceRecords.forEach(record => {
+                const empCode = record.id || record.empCode || '';
+                const checkIn = record.checkIn;
+                // If they have a check-in time, they are present
+                if (empCode && checkIn && checkIn !== '--:--' && checkIn !== null && checkIn !== '') {
+                    presentEmployees.add(empCode);
+                }
+            });
+        }
+        
+        console.log('Employees with check-in time (present):', presentEmployees.size);
+        
+        // Find absentees (employees from our complete list who are NOT in present list)
+        // IMPORTANT: Only include employees from employee-names.json, ignore any from API that aren't in our list
         const absentees = allEmployees.filter(emp => {
             const empCode = emp.id || emp.empCode || '';
+            // Only include if they're in our employee list AND not present
             return !presentEmployees.has(empCode);
         });
         
+        console.log('Total absentees:', absentees.length);
         return absentees;
     } catch (error) {
         console.error('Error fetching absentees:', error);
-        throw error;
+        // Even on error, return complete employee list as absentees
+        return createCompleteEmployeeList();
     }
 }
 
@@ -296,7 +302,8 @@ function setupEventHandlers() {
         try {
             const absentees = await fetchAbsentees(selectedDate);
             document.getElementById('loadingState').style.display = 'none';
-            renderAbsentees(absentees, typeFilter.value);
+            const currentFilter = typeFilter.value;
+            renderAbsentees(absentees, currentFilter);
         } catch (error) {
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('absenteesList').innerHTML = `
@@ -307,24 +314,25 @@ function setupEventHandlers() {
         }
     });
     
-    typeFilter.addEventListener('change', async function() {
+    typeFilter.addEventListener('change', function() {
+        // Just re-render with the same data, applying the new filter
         const datePicker = document.getElementById('datePicker');
         const selectedDate = new Date(datePicker.value);
         
         document.getElementById('loadingState').style.display = 'block';
         
-        try {
-            const absentees = await fetchAbsentees(selectedDate);
+        // Fetch fresh data and apply filter
+        fetchAbsentees(selectedDate).then(absentees => {
             document.getElementById('loadingState').style.display = 'none';
             renderAbsentees(absentees, this.value);
-        } catch (error) {
+        }).catch(error => {
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('absenteesList').innerHTML = `
                 <div class="error-state">
                     <p style="color: var(--danger-color);">Error loading absentees: ${error.message}</p>
                 </div>
             `;
-        }
+        });
     });
 }
 
