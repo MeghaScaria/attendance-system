@@ -265,8 +265,19 @@ function renderAbsentees(absentees, selectedType = 'all') {
 
 // Initialize absentees page
 async function initAbsentees() {
-    // Load employee types and names
+    // Load employee types and names FIRST (must complete before fetching absentees)
     await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
+    
+    // Verify data loaded
+    if (Object.keys(employeeNameMap).length === 0) {
+        console.error('⚠ Employee names not loaded!');
+        document.getElementById('absenteesList').innerHTML = `
+            <div class="error-state">
+                <p style="color: var(--danger-color);">Error: Could not load employee data. Please refresh the page.</p>
+            </div>
+        `;
+        return;
+    }
     
     // Set default date to today
     const datePicker = document.getElementById('datePicker');
@@ -284,7 +295,8 @@ async function initAbsentees() {
     try {
         const absentees = await fetchAbsentees(today);
         document.getElementById('loadingState').style.display = 'none';
-        renderAbsentees(absentees);
+        const typeFilter = document.getElementById('typeFilter');
+        renderAbsentees(absentees, typeFilter ? typeFilter.value : 'all');
     } catch (error) {
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('absenteesList').innerHTML = `
