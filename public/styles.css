@@ -757,6 +757,36 @@ body {
     min-height: 400px;
 }
 
+.absentees-section {
+    margin-bottom: 32px;
+}
+
+.absentees-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.absentees-section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.empty-state-small {
+    text-align: center;
+    padding: 20px;
+    color: var(--gray-500);
+    font-size: 14px;
+}
+
 .absentee-card {
     display: flex;
     align-items: center;

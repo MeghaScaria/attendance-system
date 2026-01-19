@@ -68,6 +68,26 @@ function getEmployeeType(empCode) {
     return employeeTypeMap[empCode] || 'unknown';
 }
 
+// Create complete employee list from employee-names.json
+function createCompleteEmployeeList() {
+    const allEmployees = [];
+    
+    // Get all employee codes from employeeNameMap
+    Object.keys(employeeNameMap).forEach(empCode => {
+        const name = employeeNameMap[empCode];
+        const type = getEmployeeType(empCode);
+        
+        allEmployees.push({
+            id: empCode,
+            empCode: empCode,
+            name: name,
+            type: type
+        });
+    });
+    
+    return allEmployees;
+}
+
 // Fetch absentees for a specific date
 async function fetchAbsentees(date) {
     try {
@@ -81,21 +101,18 @@ async function fetchAbsentees(date) {
             throw new Error(result.error || 'Failed to fetch attendance data');
         }
         
-        // Get all employees list
-        const childrenResult = await ApiService.getChildrenList();
-        if (!childrenResult.success) {
-            throw new Error('Failed to fetch employees list');
-        }
-        
-        const allEmployees = childrenResult.data || [];
+        // Get ALL employees from employee-names.json (complete list)
+        const allEmployees = createCompleteEmployeeList();
         const attendanceRecords = result.data || [];
         
-        // Create a map of employees who were present
+        // Create a map of employees who were present (have check-in time)
         const presentEmployees = new Set();
         attendanceRecords.forEach(record => {
-            const status = (record.status || '').toLowerCase();
-            if (status === 'present' || status === 'p') {
-                presentEmployees.add(record.id || record.empCode || '');
+            const empCode = record.id || record.empCode || '';
+            const checkIn = record.checkIn;
+            // If they have a check-in time, they are present
+            if (empCode && checkIn && checkIn !== '--:--' && checkIn !== null) {
+                presentEmployees.add(empCode);
             }
         });
         
