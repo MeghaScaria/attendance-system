@@ -6,7 +6,10 @@
 
 const API_CONFIG = {
     // Backend server URL (where your Node.js server is running)
-    baseURL: 'https://praja-kirana-seva-attendance-system.onrender.com/api',  // Change this to your backend server URL
+    // Automatically uses localhost for local development, Render URL for production
+    baseURL: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+        ? 'http://localhost:3000/api'  // Local development
+        : 'https://praja-kirana-seva-attendance-system.onrender.com/api',  // Production (Render)
     
     // API Endpoints (these call your backend, which then calls E-Time Office Cloud)
     endpoints: {
