@@ -134,8 +134,9 @@ function transformAttendanceData(etimeData, filterToday = false) {
 
     return etimeData
         .filter(record => {
-            // Skip invalid records
-            if (!record.Empcode || !record.DateString) return false;
+            // Skip invalid records (normalize Empcode for consistent checking)
+            const empCode = normalizeEmpCode(record.Empcode);
+            if (!empCode || !record.DateString) return false;
             
             // If filtering for today, skip other dates
             if (filterToday && record.DateString !== todayStr) return false;
