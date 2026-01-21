@@ -496,15 +496,15 @@ function loadEmployeeTypes() {
         }
     } catch (error) {
         console.error('Error loading employee types:', error);
-        // Fallback: hardcoded employee types (18 students + 7 staff)
+        // Fallback: hardcoded employee types (22 students + 3 staff = 25 total)
         employeeTypeMap = {
-            "101": "teacher", "102": "teacher", "103": "teacher", "104": "teacher",
-            "105": "teacher", "106": "teacher", "107": "teacher",
-            "2001": "student", "2002": "student", "2003": "student", "2004": "student",
-            "2005": "student", "2006": "student", "2007": "student", "2008": "student",
-            "2009": "student", "2010": "student", "2011": "student", "2012": "student",
-            "2013": "student", "2014": "student", "2015": "student", "2016": "student",
-            "2017": "student", "2018": "student"
+            "1": "student", "2": "student", "3": "student", "4": "student", "5": "student",
+            "101": "teacher", "103": "teacher", "105": "teacher",
+            "2002": "student", "2003": "student", "2004": "student", "2005": "student",
+            "2006": "student", "2007": "student", "2008": "student", "2009": "student",
+            "2010": "student", "2011": "student", "2012": "student", "2013": "student",
+            "2014": "student", "2015": "student", "2016": "student", "2017": "student",
+            "2018": "student", "2019": "student"
         };
     }
 }

@@ -1,13 +1,13 @@
 {
   "employeeTypes": {
+    "1": "student",
+    "2": "student",
+    "3": "student",
+    "4": "student",
+    "5": "student",
     "101": "teacher",
-    "102": "teacher",
     "103": "teacher",
-    "104": "teacher",
     "105": "teacher",
-    "106": "teacher",
-    "107": "teacher",
-    "2001": "student",
     "2002": "student",
     "2003": "student",
     "2004": "student",
@@ -24,7 +24,8 @@
     "2015": "student",
     "2016": "student",
     "2017": "student",
-    "2018": "student"
+    "2018": "student",
+    "2019": "student"
   },
   "notes": "This file maps employee codes (Empcode) to their type: 'student' or 'teacher'. Staff members are mapped as 'teacher'.",
   "instructions": "Add employee codes from your Excel file here. Format: \"EMPLOYEE_CODE\": \"student\" or \"teacher\"",
