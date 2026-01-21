@@ -482,15 +482,15 @@ function loadEmployeeTypes() {
             console.log('✓ Loaded employee types:', Object.keys(employeeTypeMap).length, 'entries');
         } else {
             console.warn('⚠ employee-types.json not found at:', typesPath);
-            // Fallback: hardcoded employee types
+            // Fallback: hardcoded employee types (22 students + 3 staff = 25 total)
             employeeTypeMap = {
-                "101": "teacher", "102": "teacher", "103": "teacher", "104": "teacher",
-                "105": "teacher", "106": "teacher", "107": "teacher",
-                "2001": "student", "2002": "student", "2003": "student", "2004": "student",
-                "2005": "student", "2006": "student", "2007": "student", "2008": "student",
-                "2009": "student", "2010": "student", "2011": "student", "2012": "student",
-                "2013": "student", "2014": "student", "2015": "student", "2016": "student",
-                "2017": "student", "2018": "student"
+                "1": "student", "2": "student", "3": "student", "4": "student", "5": "student",
+                "101": "teacher", "103": "teacher", "105": "teacher",
+                "2002": "student", "2003": "student", "2004": "student", "2005": "student",
+                "2006": "student", "2007": "student", "2008": "student", "2009": "student",
+                "2010": "student", "2011": "student", "2012": "student", "2013": "student",
+                "2014": "student", "2015": "student", "2016": "student", "2017": "student",
+                "2018": "student", "2019": "student"
             };
             console.log('✓ Using fallback employee types');
         }
@@ -569,7 +569,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         // Fallback if file loading failed
         if (allEmployeeCodes.length === 0) {
             console.log('⚠ Using fallback employee codes');
-            allEmployeeCodes = ['101', '102', '103', '104', '105', '106', '107', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018'];
+            allEmployeeCodes = ['1', '2', '3', '4', '5', '101', '103', '105', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019'];
         }
 
         // Separate students and staff from our master list
