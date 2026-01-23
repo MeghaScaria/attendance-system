@@ -19,7 +19,7 @@
                         <path d="M30 20C26.6863 20 24 22.6863 24 26C24 29.3137 26.6863 32 30 32C33.3137 32 36 29.3137 36 26C36 22.6863 33.3137 20 30 20Z" fill="#FFFFFF"/>
                         <path d="M20 38C20 33.5817 23.5817 30 28 30H32C36.4183 30 40 33.5817 40 38V42H20V38Z" fill="#FFFFFF"/>
                     </svg>
-                    <span>Attendance System</span>
+                    <span data-translate="common.attendanceSystem">Attendance System</span>
                 </div>
             </div>
             <nav class="sidebar-nav">
@@ -27,46 +27,49 @@
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
-                    Dashboard
+                    <span data-translate="common.dashboard">Dashboard</span>
                 </a>
                 <a href="attendance.html" class="nav-item">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                     </svg>
-                    Attendance
+                    <span data-translate="common.attendance">Attendance</span>
                 </a>
                 <a href="absentees.html" class="nav-item">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Absentees
+                    <span data-translate="common.absentees">Absentees</span>
                 </a>
                 <a href="directory.html" class="nav-item">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
-                    Directory
+                    <span data-translate="common.directory">Directory</span>
                 </a>
                 <a href="#" class="nav-item">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
-                    Profile
+                    <span data-translate="common.profile">Profile</span>
                 </a>
                 <a href="#" class="nav-item">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    Settings
+                    <span data-translate="common.settings">Settings</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
+                <button class="lang-toggle" id="langToggle" onclick="toggleLanguage()">
+                    <span id="langToggleText">ಕನ್ನಡ</span>
+                </button>
                 <button class="btn-logout" onclick="logout()">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                     </svg>
-                    Logout
+                    <span data-translate="common.logout">Logout</span>
                 </button>
             </div>
         </aside>
@@ -75,7 +78,7 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-content">
-                    <h2>Dashboard</h2>
+                    <h2 data-translate="dashboard.title">Dashboard</h2>
                     <div class="header-actions">
                         <div class="user-profile">
                             <span id="userName">Admin User</span>
@@ -88,7 +91,7 @@
             <div class="dashboard-content">
                 <!-- Student Stats Cards -->
                 <div class="stats-section">
-                    <h3 style="margin-bottom: 16px; color: var(--gray-700); font-size: 18px; font-weight: 600;">Student Attendance</h3>
+                    <h3 style="margin-bottom: 16px; color: var(--gray-700); font-size: 18px; font-weight: 600;" data-translate="dashboard.studentAttendance">Student Attendance</h3>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon" style="background: #4F46E5;">
@@ -98,7 +101,7 @@
                             </div>
                             <div class="stat-content">
                                 <h3 id="totalStudents">22</h3>
-                                <p>Total Students</p>
+                                <p data-translate="dashboard.totalStudents">Total Students</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -109,7 +112,7 @@
                             </div>
                             <div class="stat-content">
                                 <h3 id="presentStudents">0</h3>
-                                <p>Present Today</p>
+                                <p data-translate="dashboard.presentToday">Present Today</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -120,7 +123,7 @@
                             </div>
                             <div class="stat-content">
                                 <h3 id="absentStudents">0</h3>
-                                <p>Absent Today</p>
+                                <p data-translate="dashboard.absentToday">Absent Today</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -131,7 +134,7 @@
                             </div>
                             <div class="stat-content">
                                 <h3 id="attendanceRate">0%</h3>
-                                <p>Monthly Average</p>
+                                <p data-translate="dashboard.monthlyAverage">Monthly Average</p>
                             </div>
                         </div>
                     </div>
@@ -139,7 +142,7 @@
 
                 <!-- Staff Stats Cards -->
                 <div class="stats-section" style="margin-top: 32px;">
-                    <h3 style="margin-bottom: 16px; color: var(--gray-700); font-size: 18px; font-weight: 600;">Staff Attendance</h3>
+                    <h3 style="margin-bottom: 16px; color: var(--gray-700); font-size: 18px; font-weight: 600;" data-translate="dashboard.staffAttendance">Staff Attendance</h3>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon" style="background: #6366F1;">
@@ -149,7 +152,7 @@
                             </div>
                             <div class="stat-content">
                                 <h3 id="totalStaff">7</h3>
-                                <p>Total Staff</p>
+                                <p data-translate="dashboard.totalStaff">Total Staff</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -160,7 +163,7 @@
                             </div>
                             <div class="stat-content">
                                 <h3 id="presentStaff">0</h3>
-                                <p>Present Today</p>
+                                <p data-translate="dashboard.presentToday">Present Today</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -171,7 +174,7 @@
                             </div>
                             <div class="stat-content">
                                 <h3 id="absentStaff">0</h3>
-                                <p>Absent Today</p>
+                                <p data-translate="dashboard.absentToday">Absent Today</p>
                             </div>
                         </div>
                     </div>
@@ -181,10 +184,10 @@
                 <div class="charts-grid">
                     <div class="chart-card">
                         <div class="chart-header">
-                            <h3>Weekly Attendance</h3>
+                            <h3 data-translate="dashboard.weeklyAttendance">Weekly Attendance</h3>
                             <select id="weekSelect" class="select-input">
-                                <option value="this">This Week</option>
-                                <option value="last">Last Week</option>
+                                <option value="this" data-translate="dashboard.thisWeek">This Week</option>
+                                <option value="last" data-translate="dashboard.lastWeek">Last Week</option>
                             </select>
                         </div>
                         <div class="chart-container">
@@ -193,7 +196,7 @@
                     </div>
                     <div class="chart-card">
                         <div class="chart-header">
-                            <h3>Monthly Overview</h3>
+                            <h3 data-translate="dashboard.monthlyOverview">Monthly Overview</h3>
                         </div>
                         <div class="chart-container">
                             <canvas id="monthlyChart"></canvas>
@@ -203,7 +206,7 @@
 
                 <!-- Recent Activity -->
                 <div class="activity-card">
-                    <h3>Recent Check-ins</h3>
+                    <h3 data-translate="dashboard.recentCheckins">Recent Check-ins</h3>
                     <div class="activity-list" id="recentActivity">
                         <!-- Activity items will be populated by JavaScript -->
                     </div>
@@ -211,6 +214,25 @@
             </div>
         </main>
     </div>
+    <script src="translations.js"></script>
+    <script>
+        function toggleLanguage() {
+            if (window.i18n) {
+                window.i18n.toggleLanguage();
+                updateLangToggleText();
+            }
+        }
+        function updateLangToggleText() {
+            const btn = document.getElementById('langToggleText');
+            if (btn && window.i18n) {
+                btn.textContent = window.i18n.getCurrentLanguage() === 'en' ? 'ಕನ್ನಡ' : 'English';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateLangToggleText, 200);
+        });
+        window.addEventListener('languageChanged', updateLangToggleText);
+    </script>
     <script src="script.js"></script>
     <script src="api-config.js"></script>
     <script src="dashboard.js"></script>

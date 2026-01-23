@@ -18,26 +18,51 @@
                         <path d="M20 38C20 33.5817 23.5817 30 28 30H32C36.4183 30 40 33.5817 40 38V42H20V38Z" fill="#4F46E5"/>
                     </svg>
                 </div>
-                <h1>Attendance Management</h1>
-                <p>Biometric Attendance Tracking System</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
+                    <h1 data-translate="login.title">Attendance Management</h1>
+                    <button id="langToggle" class="lang-toggle" onclick="toggleLanguage()" style="background: #4F46E5; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">ಕನ್ನಡ</button>
+                </div>
+                <p data-translate="login.subtitle">Biometric Attendance Tracking System</p>
             </div>
             <form class="login-form" id="loginForm">
                 <div class="form-group">
-                    <label for="username">Username</label>
+                    <label for="username" data-translate="common.username">Username</label>
                     <input type="text" id="username" name="username" required autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label for="password">Password</label>
+                    <label for="password" data-translate="common.password">Password</label>
                     <input type="password" id="password" name="password" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn btn-primary">Login</button>
+                <button type="submit" class="btn btn-primary" data-translate="common.login">Login</button>
                 <div class="login-error" id="loginError"></div>
             </form>
             <div class="login-footer">
-                <p>© 2024 Charitable Trust. All rights reserved.</p>
+                <p data-translate="login.copyright">© 2024 Charitable Trust. All rights reserved.</p>
             </div>
         </div>
     </div>
+    <script src="translations.js"></script>
+    <script>
+        function toggleLanguage() {
+            if (window.i18n) {
+                window.i18n.toggleLanguage();
+                // Update button text
+                const btn = document.getElementById('langToggle');
+                if (btn) {
+                    btn.textContent = window.i18n.getCurrentLanguage() === 'en' ? 'ಕನ್ನಡ' : 'English';
+                }
+            }
+        }
+        // Update button text on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const btn = document.getElementById('langToggle');
+                if (btn && window.i18n) {
+                    btn.textContent = window.i18n.getCurrentLanguage() === 'en' ? 'ಕನ್ನಡ' : 'English';
+                }
+            }, 100);
+        });
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
