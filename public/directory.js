@@ -10,6 +10,7 @@
 
 let employeeTypeMap = {};
 let employeeNameMap = {};
+let employeeNameMapKn = {};
 let allEmployees = [];
 
 // Load employee types mapping
@@ -74,10 +75,34 @@ function getEmployeeType(empCode) {
     return employeeTypeMap[normalized] || 'unknown';
 }
 
-// Get correct employee name (override API name if mapping exists)
+// Load Kannada names for display when language is Kannada
+async function loadEmployeeNamesKannada() {
+    try {
+        const response = await fetch('/data/employee-names-kannada.json');
+        if (response.ok) {
+            const data = await response.json();
+            employeeNameMapKn = data.employeeNamesKn || {};
+        } else {
+            employeeNameMapKn = {};
+        }
+    } catch (error) {
+        employeeNameMapKn = {};
+    }
+}
+
+// Get correct employee name in English (override API name if mapping exists)
 function getEmployeeName(empCode, apiName) {
     const normalized = normalizeEmpCode(empCode);
     return employeeNameMap[normalized] || apiName || 'Unknown';
+}
+
+// Get display name (Kannada when lang is kn, else English)
+function getDisplayName(empCode, apiName) {
+    const n = normalizeEmpCode(empCode);
+    if (typeof window !== 'undefined' && window.i18n && window.i18n.getCurrentLanguage() === 'kn' && employeeNameMapKn[n]) {
+        return employeeNameMapKn[n];
+    }
+    return getEmployeeName(empCode, apiName);
 }
 
 // Create complete employee list from employee-names.json (source of truth)
@@ -220,7 +245,7 @@ function renderDirectory(employees) {
                         </div>
                     ` : students.map(emp => {
                         const empCode = normalizeEmpCode(emp.id || emp.empCode || '');
-                        const name = getEmployeeName(empCode, emp.name);
+                        const name = getDisplayName(empCode, emp.name);
                         const avatar = name.charAt(0).toUpperCase();
                         return `
                             <div class="directory-card">
@@ -255,7 +280,7 @@ function renderDirectory(employees) {
                         </div>
                     ` : teachers.map(emp => {
                         const empCode = normalizeEmpCode(emp.id || emp.empCode || '');
-                        const name = getEmployeeName(empCode, emp.name);
+                        const name = getDisplayName(empCode, emp.name);
                         const avatar = name.charAt(0).toUpperCase();
                         return `
                             <div class="directory-card">
@@ -305,7 +330,7 @@ async function initDirectory() {
     
     // Load employee types and names FIRST (must complete before creating employee list)
     console.log('📥 Loading employee data files...');
-    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
+    await Promise.all([loadEmployeeTypes(), loadEmployeeNames(), loadEmployeeNamesKannada()]);
     
     // Verify data loaded
     const nameCount = Object.keys(employeeNameMap).length;
@@ -376,6 +401,14 @@ function setupEventHandlers() {
     typeFilter.addEventListener('change', function() {
         const searchTerm = searchInput.value.trim();
         const type = this.value;
+        const filtered = filterEmployees(allEmployees, searchTerm, type);
+        renderDirectory(filtered);
+    });
+    
+    // Re-render names when language switches (English/Kannada)
+    window.addEventListener('languageChanged', () => {
+        const searchTerm = searchInput ? searchInput.value.trim() : '';
+        const type = typeFilter ? typeFilter.value : 'all';
         const filtered = filterEmployees(allEmployees, searchTerm, type);
         renderDirectory(filtered);
     });

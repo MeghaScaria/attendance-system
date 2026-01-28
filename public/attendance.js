@@ -35,7 +35,8 @@ const mockChildrenData = [
 let childrenData = [];
 let filteredData = [];
 let employeeTypeMap = {}; // Maps employee code to 'student' or 'teacher'
-let employeeNameMap = {}; // Maps employee code to correct name
+let employeeNameMap = {}; // Maps employee code to correct name (English)
+let employeeNameMapKn = {}; // Maps employee code to Kannada name
 let attendanceHandlersSetup = false; // Ensure event handlers are only attached once
 
 // Load employee type mapping from JSON file
@@ -74,6 +75,21 @@ async function loadEmployeeNames() {
     }
 }
 
+// Load Kannada names for display when language is Kannada
+async function loadEmployeeNamesKannada() {
+    try {
+        const response = await fetch('/data/employee-names-kannada.json');
+        if (response.ok) {
+            const data = await response.json();
+            employeeNameMapKn = data.employeeNamesKn || {};
+        } else {
+            employeeNameMapKn = {};
+        }
+    } catch (error) {
+        employeeNameMapKn = {};
+    }
+}
+
 // Normalize employee code to string
 function normalizeEmpCode(empCode) {
     if (empCode === null || empCode === undefined) return '';
@@ -86,9 +102,19 @@ function getEmployeeType(employeeCode) {
     return employeeTypeMap[normalized] || 'unknown';
 }
 
-// Get correct employee name (override API name if mapping exists)
+// Get correct employee name in English (override API name if mapping exists)
 function getEmployeeName(empCode, apiName) {
-    return employeeNameMap[empCode] || apiName || 'Unknown';
+    const n = normalizeEmpCode(empCode);
+    return employeeNameMap[n] || apiName || 'Unknown';
+}
+
+// Get display name (Kannada when lang is kn, else English)
+function getDisplayName(empCode, apiName) {
+    const n = normalizeEmpCode(empCode);
+    if (typeof window !== 'undefined' && window.i18n && window.i18n.getCurrentLanguage() === 'kn' && employeeNameMapKn[n]) {
+        return employeeNameMapKn[n];
+    }
+    return getEmployeeName(empCode, apiName);
 }
 
 // Transform API data to match expected format
@@ -323,7 +349,7 @@ function renderAttendanceCards(data = filteredData) {
                     return `
                     <tr>
                         <td>${record.id}</td>
-                        <td>${record.name}</td>
+                        <td>${getDisplayName(record.id, record.name)}</td>
                         <td>
                             <span class="type-badge ${typeClass}">
                                 ${typeLabel}
@@ -457,7 +483,7 @@ async function initAttendance() {
     if (grid) {
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray-500);">Loading attendance data...</div>';
     }
-    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
+    await Promise.all([loadEmployeeTypes(), loadEmployeeNames(), loadEmployeeNamesKannada()]);
     const dateSelect = document.getElementById('dateSelect');
     const dateFilter = dateSelect ? dateSelect.value : 'today';
     let customStartDate = null;
@@ -580,6 +606,11 @@ function setupEventHandlers() {
             exportToPDF();
         });
     }
+    // Re-render names when language switches (English/Kannada)
+    window.addEventListener('languageChanged', () => {
+        renderAttendanceCards(filteredData);
+        updateSummary();
+    });
 }
 
 // Export attendance data to PDF
@@ -835,7 +866,7 @@ function generatePrintContent(data, dateRangeText) {
 `;
         students.forEach(record => {
             const empCode = normalizeEmpCode(record.id || record.empCode || '');
-            const name = getEmployeeName(empCode, record.name);
+            const name = getDisplayName(empCode, record.name);
             const status = (record.status || '').toLowerCase();
             const statusClass = (status === 'present' || status === 'p') ? 'status-present' : 'status-absent';
             const statusText = (status === 'present' || status === 'p') ? 'Present' : 'Absent';
@@ -878,7 +909,7 @@ function generatePrintContent(data, dateRangeText) {
 `;
         teachers.forEach(record => {
             const empCode = normalizeEmpCode(record.id || record.empCode || '');
-            const name = getEmployeeName(empCode, record.name);
+            const name = getDisplayName(empCode, record.name);
             const status = (record.status || '').toLowerCase();
             const statusClass = (status === 'present' || status === 'p') ? 'status-present' : 'status-absent';
             const statusText = (status === 'present' || status === 'p') ? 'Present' : 'Absent';

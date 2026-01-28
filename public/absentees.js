@@ -2,6 +2,7 @@
 
 let employeeTypeMap = {};
 let employeeNameMap = {};
+let employeeNameMapKn = {};
 
 // Load employee types mapping
 async function loadEmployeeTypes() {
@@ -32,15 +33,40 @@ async function loadEmployeeNames() {
     }
 }
 
-// Get correct employee name (override API name if mapping exists)
+// Load Kannada names for display when language is Kannada
+async function loadEmployeeNamesKannada() {
+    try {
+        const response = await fetch('/data/employee-names-kannada.json');
+        if (response.ok) {
+            const data = await response.json();
+            employeeNameMapKn = data.employeeNamesKn || {};
+        } else {
+            employeeNameMapKn = {};
+        }
+    } catch (error) {
+        employeeNameMapKn = {};
+    }
+}
+
+// Get correct employee name in English (override API name if mapping exists)
 function getEmployeeName(empCode, apiName) {
-    return employeeNameMap[empCode] || apiName || 'Unknown';
+    const n = normalizeEmpCode(empCode);
+    return employeeNameMap[n] || apiName || 'Unknown';
+}
+
+// Get display name (Kannada when lang is kn, else English)
+function getDisplayName(empCode, apiName) {
+    const n = normalizeEmpCode(empCode);
+    if (typeof window !== 'undefined' && window.i18n && window.i18n.getCurrentLanguage() === 'kn' && employeeNameMapKn[n]) {
+        return employeeNameMapKn[n];
+    }
+    return getEmployeeName(empCode, apiName);
 }
 
 // Parse date from DD/MM/YYYY format
 function parseDate(dateString) {
     if (!dateString) return null;
-    
+
     const parts = dateString.split('/');
     if (parts.length === 3) {
         const day = parseInt(parts[0], 10);
@@ -48,7 +74,7 @@ function parseDate(dateString) {
         const year = parseInt(parts[2], 10);
         return new Date(year, month, day);
     }
-    
+
     return new Date(dateString);
 }
 
@@ -81,12 +107,12 @@ function getEmployeeType(empCode) {
 // Create complete employee list from employee-names.json
 function createCompleteEmployeeList() {
     const allEmployees = [];
-    
+
     // Get all employee codes from employeeNameMap
     Object.keys(employeeNameMap).forEach(empCode => {
         const name = employeeNameMap[empCode];
         const type = getEmployeeType(empCode);
-        
+
         allEmployees.push({
             id: empCode,
             empCode: empCode,
@@ -94,11 +120,11 @@ function createCompleteEmployeeList() {
             type: type
         });
     });
-    
+
     console.log('Created complete employee list:', allEmployees.length, 'employees');
     console.log('Students:', allEmployees.filter(e => e.type === 'student').length);
     console.log('Teachers:', allEmployees.filter(e => e.type === 'teacher').length);
-    
+
     return allEmployees;
 }
 
@@ -107,17 +133,17 @@ async function fetchAbsentees(date) {
     try {
         // Format date as YYYY-MM-DD
         const dateStr = formatDateForInput(date);
-        
+
         // Get ALL employees from employee-names.json FIRST (complete list - source of truth)
         const allEmployees = createCompleteEmployeeList();
         console.log('Total employees from names file:', allEmployees.length);
-        
+
         // Fetch attendance for the selected date
         const result = await ApiService.getAttendanceRange(dateStr, dateStr);
-        
+
         // Create a map of employees who were present (have check-in time)
         const presentEmployees = new Set();
-        
+
         if (result.success && result.data) {
             const attendanceRecords = result.data || [];
             attendanceRecords.forEach(record => {
@@ -130,9 +156,9 @@ async function fetchAbsentees(date) {
                 }
             });
         }
-        
+
         console.log('Employees with check-in time (present):', presentEmployees.size);
-        
+
         // Find absentees (employees from our complete list who are NOT in present list)
         // IMPORTANT: Only include employees from employee-names.json, ignore any from API that aren't in our list
         const absentees = allEmployees.filter(emp => {
@@ -141,7 +167,7 @@ async function fetchAbsentees(date) {
             // Only include if they're in our employee list AND not present
             return empCode && !presentEmployees.has(empCode);
         });
-        
+
         console.log('Total absentees:', absentees.length);
         return absentees;
     } catch (error) {
@@ -154,45 +180,45 @@ async function fetchAbsentees(date) {
 // Render absentees list with separate sections
 function renderAbsentees(absentees, selectedType = 'all') {
     const listContainer = document.getElementById('absenteesList');
-    
+
     if (!listContainer) return;
-    
+
     // Separate students and teachers
     const absentStudents = absentees.filter(emp => {
         const empCode = String(emp.id || emp.empCode || '').trim();
         return getEmployeeType(empCode) === 'student';
     });
-    
+
     const absentTeachers = absentees.filter(emp => {
         const empCode = String(emp.id || emp.empCode || '').trim();
         return getEmployeeType(empCode) === 'teacher';
     });
-    
+
     // Update counts
     const totalAbsent = absentees.length;
     const studentCount = absentStudents.length;
     const teacherCount = absentTeachers.length;
-    
+
     document.getElementById('totalAbsent').textContent = totalAbsent;
     document.getElementById('absentStudents').textContent = studentCount;
     document.getElementById('absentTeachers').textContent = teacherCount;
-    
+
     // Sort by name
     absentStudents.sort((a, b) => {
         const nameA = (a.name || '').toLowerCase();
         const nameB = (b.name || '').toLowerCase();
         return nameA.localeCompare(nameB);
     });
-    
+
     absentTeachers.sort((a, b) => {
         const nameA = (a.name || '').toLowerCase();
         const nameB = (b.name || '').toLowerCase();
         return nameA.localeCompare(nameB);
     });
-    
+
     // Render based on selected type
     let html = '';
-    
+
     if (selectedType === 'all' || selectedType === 'student') {
         // Students section
         html += `
@@ -204,10 +230,10 @@ function renderAbsentees(absentees, selectedType = 'all') {
                             <p>No students absent</p>
                         </div>
                     ` : absentStudents.map(emp => {
-                        const empCode = emp.id || emp.empCode || '';
-                        const name = getEmployeeName(empCode, emp.name);
-                        const avatar = name.charAt(0).toUpperCase();
-                        return `
+            const empCode = emp.id || emp.empCode || '';
+            const name = getDisplayName(empCode, emp.name);
+            const avatar = name.charAt(0).toUpperCase();
+            return `
                             <div class="absentee-card">
                                 <div class="absentee-avatar">${avatar}</div>
                                 <div class="absentee-info">
@@ -219,12 +245,12 @@ function renderAbsentees(absentees, selectedType = 'all') {
                                 </div>
                             </div>
                         `;
-                    }).join('')}
+        }).join('')}
                 </div>
             </div>
         `;
     }
-    
+
     if (selectedType === 'all' || selectedType === 'teacher') {
         // Teachers section
         html += `
@@ -236,10 +262,10 @@ function renderAbsentees(absentees, selectedType = 'all') {
                             <p>No teachers absent</p>
                         </div>
                     ` : absentTeachers.map(emp => {
-                        const empCode = emp.id || emp.empCode || '';
-                        const name = getEmployeeName(empCode, emp.name);
-                        const avatar = name.charAt(0).toUpperCase();
-                        return `
+            const empCode = emp.id || emp.empCode || '';
+            const name = getDisplayName(empCode, emp.name);
+            const avatar = name.charAt(0).toUpperCase();
+            return `
                             <div class="absentee-card">
                                 <div class="absentee-avatar">${avatar}</div>
                                 <div class="absentee-info">
@@ -251,12 +277,12 @@ function renderAbsentees(absentees, selectedType = 'all') {
                                 </div>
                             </div>
                         `;
-                    }).join('')}
+        }).join('')}
                 </div>
             </div>
         `;
     }
-    
+
     if (totalAbsent === 0) {
         html = `
             <div class="empty-state">
@@ -268,15 +294,15 @@ function renderAbsentees(absentees, selectedType = 'all') {
             </div>
         `;
     }
-    
+
     listContainer.innerHTML = html;
 }
 
 // Initialize absentees page
 async function initAbsentees() {
     // Load employee types and names FIRST (must complete before fetching absentees)
-    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
-    
+    await Promise.all([loadEmployeeTypes(), loadEmployeeNames(), loadEmployeeNamesKannada()]);
+
     // Verify data loaded
     if (Object.keys(employeeNameMap).length === 0) {
         console.error('⚠ Employee names not loaded!');
@@ -287,19 +313,19 @@ async function initAbsentees() {
         `;
         return;
     }
-    
+
     // Set default date to today
     const datePicker = document.getElementById('datePicker');
     const today = new Date();
     datePicker.value = formatDateForInput(today);
     datePicker.max = formatDateForInput(today); // Can't select future dates
-    
+
     // Update display date
     document.getElementById('selectedDate').textContent = formatDateForDisplay(today);
-    
+
     // Show loading state
     document.getElementById('loadingState').style.display = 'block';
-    
+
     // Fetch and display absentees
     try {
         const absentees = await fetchAbsentees(today);
@@ -320,13 +346,13 @@ async function initAbsentees() {
 function setupEventHandlers() {
     const datePicker = document.getElementById('datePicker');
     const typeFilter = document.getElementById('typeFilter');
-    
-    datePicker.addEventListener('change', async function() {
+
+    datePicker.addEventListener('change', async function () {
         const selectedDate = new Date(this.value);
         document.getElementById('selectedDate').textContent = formatDateForDisplay(selectedDate);
-        
+
         document.getElementById('loadingState').style.display = 'block';
-        
+
         try {
             const absentees = await fetchAbsentees(selectedDate);
             document.getElementById('loadingState').style.display = 'none';
@@ -341,14 +367,14 @@ function setupEventHandlers() {
             `;
         }
     });
-    
-    typeFilter.addEventListener('change', function() {
+
+    typeFilter.addEventListener('change', function () {
         // Just re-render with the same data, applying the new filter
         const datePicker = document.getElementById('datePicker');
         const selectedDate = new Date(datePicker.value);
-        
+
         document.getElementById('loadingState').style.display = 'block';
-        
+
         // Fetch fresh data and apply filter
         fetchAbsentees(selectedDate).then(absentees => {
             document.getElementById('loadingState').style.display = 'none';
@@ -362,10 +388,24 @@ function setupEventHandlers() {
             `;
         });
     });
+    
+    // Re-render names when language switches (English/Kannada)
+    window.addEventListener('languageChanged', () => {
+        const datePicker = document.getElementById('datePicker');
+        const typeFilter = document.getElementById('typeFilter');
+        if (datePicker && datePicker.value) {
+            const selectedDate = new Date(datePicker.value);
+            fetchAbsentees(selectedDate).then(absentees => {
+                renderAbsentees(absentees, typeFilter ? typeFilter.value : 'all');
+            }).catch(error => {
+                console.error('Error refreshing absentees on language change:', error);
+            });
+        }
+    });
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initAbsentees();
     setupEventHandlers();
 });
