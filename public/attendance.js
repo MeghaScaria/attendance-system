@@ -36,6 +36,7 @@ let childrenData = [];
 let filteredData = [];
 let employeeTypeMap = {}; // Maps employee code to 'student' or 'teacher'
 let employeeNameMap = {}; // Maps employee code to correct name
+let attendanceHandlersSetup = false; // Ensure event handlers are only attached once
 
 // Load employee type mapping from JSON file
 async function loadEmployeeTypes() {
@@ -167,9 +168,10 @@ function createCompleteEmployeeList(attendanceRecords = [], viewDateStr = null) 
         const attendanceRecord = attendanceMap.get(empCode);
         
         if (attendanceRecord) {
-            // Employee has attendance record - use it
+            // Employee has attendance record - use it; when viewDateStr is set, show that date for consistency
             allEmployees.push({
                 ...attendanceRecord,
+                date: viewDateStr ? dateStr : attendanceRecord.date,
                 name: getEmployeeName(empCode, attendanceRecord.name),
                 type: getEmployeeType(empCode)
             });
@@ -271,8 +273,14 @@ async function fetchAttendanceData(dateFilter = 'today', customStartDate = null,
             }));
         }
         
-        // View date for empty entries (single-day views)
+        // View date for single-day views
         const viewDate = (dateFilter === 'today' || dateFilter === 'date' || (dateFilter === 'custom' && startDate === endDate)) ? startDate : null;
+        // For single-day view, keep only records for that date (API returns DD/MM/YYYY)
+        if (viewDate && attendanceRecords.length > 0) {
+            const [y, m, d] = viewDate.split('-');
+            const targetDateStr = `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+            attendanceRecords = attendanceRecords.filter(r => (r.date || '').trim() === targetDateStr);
+        }
         // Create complete list with all employees (including those without attendance)
         const completeList = createCompleteEmployeeList(attendanceRecords, viewDate);
         
@@ -415,22 +423,14 @@ function searchChildren(query) {
     updateSummary();
 }
 
-// Initialize attendance page
-async function initAttendance() {
-    // Show loading state
+// Refresh attendance data only (fetch + apply filters). Use this from date/single-date handlers so we don't re-attach handlers.
+async function refreshAttendanceData() {
     const grid = document.getElementById('attendanceGrid');
     if (grid) {
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray-500);">Loading attendance data...</div>';
     }
-    
-    // Load employee type and name mappings first
-    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
-    
-    // Get selected date filter
     const dateSelect = document.getElementById('dateSelect');
     const dateFilter = dateSelect ? dateSelect.value : 'today';
-    
-    // Get custom/single dates based on filter
     let customStartDate = null;
     let customEndDate = null;
     if (dateFilter === 'date') {
@@ -446,16 +446,42 @@ async function initAttendance() {
         customStartDate = startDateInput ? startDateInput.value : null;
         customEndDate = endDateInput ? endDateInput.value : null;
     }
-    
-    // Fetch data
     childrenData = await fetchAttendanceData(dateFilter, customStartDate, customEndDate);
     filteredData = [...childrenData];
-    
-    // Apply filters
     applyFilters();
-    
-    // Setup event handlers
-    setupEventHandlers();
+}
+
+// Initialize attendance page (load mappings, fetch data, attach handlers once)
+async function initAttendance() {
+    const grid = document.getElementById('attendanceGrid');
+    if (grid) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray-500);">Loading attendance data...</div>';
+    }
+    await Promise.all([loadEmployeeTypes(), loadEmployeeNames()]);
+    const dateSelect = document.getElementById('dateSelect');
+    const dateFilter = dateSelect ? dateSelect.value : 'today';
+    let customStartDate = null;
+    let customEndDate = null;
+    if (dateFilter === 'date') {
+        const singleDateInput = document.getElementById('singleDate');
+        const val = singleDateInput ? singleDateInput.value : null;
+        if (val) {
+            customStartDate = val;
+            customEndDate = val;
+        }
+    } else if (dateFilter === 'custom') {
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        customStartDate = startDateInput ? startDateInput.value : null;
+        customEndDate = endDateInput ? endDateInput.value : null;
+    }
+    childrenData = await fetchAttendanceData(dateFilter, customStartDate, customEndDate);
+    filteredData = [...childrenData];
+    applyFilters();
+    if (!attendanceHandlersSetup) {
+        setupEventHandlers();
+        attendanceHandlersSetup = true;
+    }
 }
 
 // Setup event handlers
@@ -516,7 +542,7 @@ function setupEventHandlers() {
                 if (singleDateContainer) singleDateContainer.style.display = 'none';
                 if (customDateRange) customDateRange.style.display = 'none';
             }
-            await initAttendance();
+            await refreshAttendanceData();
         });
     }
     
@@ -525,7 +551,7 @@ function setupEventHandlers() {
     if (singleDateInput) {
         singleDateInput.addEventListener('change', async () => {
             if (dateSelect && dateSelect.value === 'date') {
-                await initAttendance();
+                await refreshAttendanceData();
             }
         });
     }
@@ -535,14 +561,14 @@ function setupEventHandlers() {
     if (startDateInput) {
         startDateInput.addEventListener('change', async () => {
             if (dateSelect && dateSelect.value === 'custom') {
-                await initAttendance();
+                await refreshAttendanceData();
             }
         });
     }
     if (endDateInput) {
         endDateInput.addEventListener('change', async () => {
             if (dateSelect && dateSelect.value === 'custom') {
-                await initAttendance();
+                await refreshAttendanceData();
             }
         });
     }
