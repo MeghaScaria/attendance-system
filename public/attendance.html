@@ -97,10 +97,15 @@
                         </select>
                         <select id="dateSelect" class="select-input">
                             <option value="today" data-translate="attendance.today">Today</option>
+                            <option value="date" data-translate="attendance.selectDate">Select date</option>
                             <option value="week" data-translate="attendance.thisWeek">This Week</option>
                             <option value="month" data-translate="attendance.thisMonth">This Month</option>
                             <option value="custom" data-translate="attendance.customRange">Custom Range</option>
                         </select>
+                        <div id="singleDateContainer" style="display: none; gap: 8px; align-items: center;">
+                            <label for="singleDate" style="color: var(--gray-700); font-weight: 500; white-space: nowrap;" data-translate="common.selectDate">Select Date:</label>
+                            <input type="date" id="singleDate" class="date-input" style="padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 8px;">
+                        </div>
                         <div id="customDateRange" style="display: none; gap: 8px; align-items: center;">
                             <input type="date" id="startDate" class="date-input" style="padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 8px;">
                             <span style="color: var(--gray-600);" data-translate="attendance.to">to</span>

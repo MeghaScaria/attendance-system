@@ -137,7 +137,8 @@ function formatTime(timeString) {
 }
 
 // Create complete employee list from employee-names.json
-function createCompleteEmployeeList(attendanceRecords = []) {
+// viewDateStr: optional YYYY-MM-DD string for the date we're viewing (used for empty/absent entries)
+function createCompleteEmployeeList(attendanceRecords = [], viewDateStr = null) {
     // Create a map of attendance records by employee code
     const attendanceMap = new Map();
     attendanceRecords.forEach(record => {
@@ -147,9 +148,15 @@ function createCompleteEmployeeList(attendanceRecords = []) {
         }
     });
     
-    // Get today's date string in DD/MM/YYYY format
-    const today = new Date();
-    const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    // Date string in DD/MM/YYYY format for display
+    let dateStr;
+    if (viewDateStr) {
+        const [y, m, d] = viewDateStr.split('-');
+        dateStr = `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+    } else {
+        const today = new Date();
+        dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    }
     
     // Create entries for ALL employees from employee-names.json
     const allEmployees = [];
@@ -171,7 +178,7 @@ function createCompleteEmployeeList(attendanceRecords = []) {
             allEmployees.push({
                 id: empCode,
                 name: name,
-                date: todayStr,
+                date: dateStr,
                 checkIn: null,
                 checkOut: null,
                 status: 'Absent',
@@ -201,6 +208,17 @@ async function fetchAttendanceData(dateFilter = 'today', customStartDate = null,
                 startDate = today.toISOString().split('T')[0];
                 endDate = startDate;
                 result = await ApiService.getTodayAttendance();
+                break;
+            case 'date':
+                if (customStartDate) {
+                    startDate = customStartDate;
+                    endDate = customStartDate;
+                    result = await ApiService.getAttendanceRange(startDate, endDate);
+                } else {
+                    startDate = today.toISOString().split('T')[0];
+                    endDate = startDate;
+                    result = await ApiService.getTodayAttendance();
+                }
                 break;
             case 'week':
                 startDate = new Date(today);
@@ -253,8 +271,10 @@ async function fetchAttendanceData(dateFilter = 'today', customStartDate = null,
             }));
         }
         
+        // View date for empty entries (single-day views)
+        const viewDate = (dateFilter === 'today' || dateFilter === 'date' || (dateFilter === 'custom' && startDate === endDate)) ? startDate : null;
         // Create complete list with all employees (including those without attendance)
-        const completeList = createCompleteEmployeeList(attendanceRecords);
+        const completeList = createCompleteEmployeeList(attendanceRecords, viewDate);
         
         return completeList;
     } catch (error) {
@@ -410,10 +430,17 @@ async function initAttendance() {
     const dateSelect = document.getElementById('dateSelect');
     const dateFilter = dateSelect ? dateSelect.value : 'today';
     
-    // Get custom dates if custom range is selected
+    // Get custom/single dates based on filter
     let customStartDate = null;
     let customEndDate = null;
-    if (dateFilter === 'custom') {
+    if (dateFilter === 'date') {
+        const singleDateInput = document.getElementById('singleDate');
+        const val = singleDateInput ? singleDateInput.value : null;
+        if (val) {
+            customStartDate = val;
+            customEndDate = val;
+        }
+    } else if (dateFilter === 'custom') {
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         customStartDate = startDateInput ? startDateInput.value : null;
@@ -459,33 +486,49 @@ function setupEventHandlers() {
     
     // Date filter handler
     const dateSelect = document.getElementById('dateSelect');
+    const singleDateContainer = document.getElementById('singleDateContainer');
+    const customDateRange = document.getElementById('customDateRange');
     if (dateSelect) {
         dateSelect.addEventListener('change', async (e) => {
-            const customDateRange = document.getElementById('customDateRange');
-            if (e.target.value === 'custom') {
-                // Show custom date range inputs
+            const val = e.target.value;
+            if (val === 'date') {
+                if (singleDateContainer) singleDateContainer.style.display = 'flex';
+                if (customDateRange) customDateRange.style.display = 'none';
+                const singleDateInput = document.getElementById('singleDate');
+                if (singleDateInput && !singleDateInput.value) {
+                    singleDateInput.value = new Date().toISOString().split('T')[0];
+                }
+            } else if (val === 'custom') {
+                if (singleDateContainer) singleDateContainer.style.display = 'none';
                 if (customDateRange) {
                     customDateRange.style.display = 'flex';
-                    // Set default dates (last 7 days)
-                    const endDate = new Date();
-                    const startDate = new Date();
-                    startDate.setDate(endDate.getDate() - 7);
                     const startDateInput = document.getElementById('startDate');
                     const endDateInput = document.getElementById('endDate');
-                    if (startDateInput) startDateInput.value = startDate.toISOString().split('T')[0];
-                    if (endDateInput) endDateInput.value = endDate.toISOString().split('T')[0];
+                    if (startDateInput && endDateInput) {
+                        const endDate = new Date();
+                        const startDate = new Date();
+                        startDate.setDate(endDate.getDate() - 7);
+                        startDateInput.value = startDate.toISOString().split('T')[0];
+                        endDateInput.value = endDate.toISOString().split('T')[0];
+                    }
                 }
             } else {
-                // Hide custom date range inputs
-                if (customDateRange) {
-                    customDateRange.style.display = 'none';
-                }
+                if (singleDateContainer) singleDateContainer.style.display = 'none';
+                if (customDateRange) customDateRange.style.display = 'none';
             }
-            // Reload data for selected date range
             await initAttendance();
         });
     }
     
+    // Single-date picker handler (when "Select date" is chosen)
+    const singleDateInput = document.getElementById('singleDate');
+    if (singleDateInput) {
+        singleDateInput.addEventListener('change', async () => {
+            if (dateSelect && dateSelect.value === 'date') {
+                await initAttendance();
+            }
+        });
+    }
     // Custom date range handlers
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
@@ -524,6 +567,15 @@ function exportToPDF() {
     switch(dateFilter) {
         case 'today':
             dateRangeText = `Date: ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+            break;
+        case 'date':
+            const singleDateInput = document.getElementById('singleDate');
+            if (singleDateInput && singleDateInput.value) {
+                const d = new Date(singleDateInput.value);
+                dateRangeText = `Date: ${d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+            } else {
+                dateRangeText = `Date: ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+            }
             break;
         case 'week':
             const weekAgo = new Date(today);
