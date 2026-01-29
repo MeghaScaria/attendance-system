@@ -388,6 +388,7 @@ async function initDirectory() {
 function setupEventHandlers() {
     const searchInput = document.getElementById('searchInput');
     const typeFilter = document.getElementById('typeFilter');
+    if (!searchInput || !typeFilter) return;
     
     // Search input handler
     searchInput.addEventListener('input', function() {
@@ -417,11 +418,11 @@ function setupEventHandlers() {
 // Initialize on page load
 console.log('📄 directory.js: Setting up DOMContentLoaded listener...');
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('📄 directory.js: DOMContentLoaded fired!');
     console.log('📄 directory.js: Calling initDirectory()...');
     try {
-        initDirectory();
+        await initDirectory();
         setupEventHandlers();
         console.log('📄 directory.js: Initialization complete!');
     } catch (error) {
@@ -429,16 +430,3 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('  Stack:', error.stack);
     }
 });
-
-// Also try immediate execution if DOM is already loaded
-if (document.readyState === 'loading') {
-    console.log('📄 directory.js: DOM is still loading, waiting for DOMContentLoaded...');
-} else {
-    console.log('📄 directory.js: DOM already loaded, calling initDirectory() immediately...');
-    try {
-        initDirectory();
-        setupEventHandlers();
-    } catch (error) {
-        console.error('✗ directory.js: Error during immediate initialization:', error);
-    }
-}

@@ -248,29 +248,6 @@ async function fetchAttendanceData(dateFilter = 'today', customStartDate = null,
                     result = await ApiService.getTodayAttendance();
                 }
                 break;
-            case 'week':
-                startDate = new Date(today);
-                startDate.setDate(today.getDate() - 7);
-                endDate = today.toISOString().split('T')[0];
-                result = await ApiService.getAttendanceRange(startDate.toISOString().split('T')[0], endDate);
-                break;
-            case 'month':
-                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                endDate = today.toISOString().split('T')[0];
-                result = await ApiService.getAttendanceRange(startDate.toISOString().split('T')[0], endDate);
-                break;
-            case 'custom':
-                if (customStartDate && customEndDate) {
-                    startDate = customStartDate;
-                    endDate = customEndDate;
-                    result = await ApiService.getAttendanceRange(startDate, endDate);
-                } else {
-                    // Fallback to today if custom dates not provided
-                    startDate = today.toISOString().split('T')[0];
-                    endDate = startDate;
-                    result = await ApiService.getTodayAttendance();
-                }
-                break;
             default:
                 result = await ApiService.getTodayAttendance();
         }
@@ -300,7 +277,7 @@ async function fetchAttendanceData(dateFilter = 'today', customStartDate = null,
         }
         
         // View date for single-day views
-        const viewDate = (dateFilter === 'today' || dateFilter === 'date' || (dateFilter === 'custom' && startDate === endDate)) ? startDate : null;
+        const viewDate = (dateFilter === 'today' || dateFilter === 'date') ? startDate : null;
         // For single-day view, keep only records for that date (API returns DD/MM/YYYY)
         if (viewDate && attendanceRecords.length > 0) {
             const [y, m, d] = viewDate.split('-');
@@ -466,11 +443,6 @@ async function refreshAttendanceData() {
             customStartDate = val;
             customEndDate = val;
         }
-    } else if (dateFilter === 'custom') {
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        customStartDate = startDateInput ? startDateInput.value : null;
-        customEndDate = endDateInput ? endDateInput.value : null;
     }
     childrenData = await fetchAttendanceData(dateFilter, customStartDate, customEndDate);
     filteredData = [...childrenData];
@@ -495,11 +467,6 @@ async function initAttendance() {
             customStartDate = val;
             customEndDate = val;
         }
-    } else if (dateFilter === 'custom') {
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        customStartDate = startDateInput ? startDateInput.value : null;
-        customEndDate = endDateInput ? endDateInput.value : null;
     }
     childrenData = await fetchAttendanceData(dateFilter, customStartDate, customEndDate);
     filteredData = [...childrenData];
@@ -539,34 +506,17 @@ function setupEventHandlers() {
     // Date filter handler
     const dateSelect = document.getElementById('dateSelect');
     const singleDateContainer = document.getElementById('singleDateContainer');
-    const customDateRange = document.getElementById('customDateRange');
     if (dateSelect) {
         dateSelect.addEventListener('change', async (e) => {
             const val = e.target.value;
             if (val === 'date') {
                 if (singleDateContainer) singleDateContainer.style.display = 'flex';
-                if (customDateRange) customDateRange.style.display = 'none';
                 const singleDateInput = document.getElementById('singleDate');
                 if (singleDateInput && !singleDateInput.value) {
                     singleDateInput.value = new Date().toISOString().split('T')[0];
                 }
-            } else if (val === 'custom') {
-                if (singleDateContainer) singleDateContainer.style.display = 'none';
-                if (customDateRange) {
-                    customDateRange.style.display = 'flex';
-                    const startDateInput = document.getElementById('startDate');
-                    const endDateInput = document.getElementById('endDate');
-                    if (startDateInput && endDateInput) {
-                        const endDate = new Date();
-                        const startDate = new Date();
-                        startDate.setDate(endDate.getDate() - 7);
-                        startDateInput.value = startDate.toISOString().split('T')[0];
-                        endDateInput.value = endDate.toISOString().split('T')[0];
-                    }
-                }
             } else {
                 if (singleDateContainer) singleDateContainer.style.display = 'none';
-                if (customDateRange) customDateRange.style.display = 'none';
             }
             await refreshAttendanceData();
         });
@@ -577,23 +527,6 @@ function setupEventHandlers() {
     if (singleDateInput) {
         singleDateInput.addEventListener('change', async () => {
             if (dateSelect && dateSelect.value === 'date') {
-                await refreshAttendanceData();
-            }
-        });
-    }
-    // Custom date range handlers
-    const startDateInput = document.getElementById('startDate');
-    const endDateInput = document.getElementById('endDate');
-    if (startDateInput) {
-        startDateInput.addEventListener('change', async () => {
-            if (dateSelect && dateSelect.value === 'custom') {
-                await refreshAttendanceData();
-            }
-        });
-    }
-    if (endDateInput) {
-        endDateInput.addEventListener('change', async () => {
-            if (dateSelect && dateSelect.value === 'custom') {
                 await refreshAttendanceData();
             }
         });
@@ -634,26 +567,8 @@ function exportToPDF() {
                 dateRangeText = `Date: ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
             }
             break;
-        case 'week':
-            const weekAgo = new Date(today);
-            weekAgo.setDate(today.getDate() - 7);
-            dateRangeText = `Date Range: ${weekAgo.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} to ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
-            break;
-        case 'month':
-            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-            dateRangeText = `Month: ${firstDay.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`;
-            break;
-        case 'custom':
-            const startDateInput = document.getElementById('startDate');
-            const endDateInput = document.getElementById('endDate');
-            if (startDateInput && endDateInput && startDateInput.value && endDateInput.value) {
-                const startDate = new Date(startDateInput.value);
-                const endDate = new Date(endDateInput.value);
-                dateRangeText = `Date Range: ${startDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} to ${endDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
-            } else {
-                dateRangeText = `Date: ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
-            }
-            break;
+        default:
+            dateRangeText = `Date: ${today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
     }
     
     // Create print-friendly HTML
